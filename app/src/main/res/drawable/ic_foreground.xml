@@ -1,24 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <!-- Escudo gamer con borde neon -->
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Halo exterior sutil del escudo -->
     <path
         android:fillColor="#00E5FF"
-        android:pathData="M54,12L88,26V56C88,76 73,91 54,98C35,91 20,76 20,56V26L54,12Z" />
+        android:pathData="M54,14 L86,27 L86,54 C86,74 72,88 54,95 C36,88 22,74 22,54 L22,27 Z" />
+
+    <!-- Marco interno oscuro -->
     <path
-        android:fillColor="#0E1526"
-        android:pathData="M54,18L82,29V55C82,72 69,85 54,91C39,85 26,72 26,55V29L54,18Z" />
-    <!-- Llave neon -->
+        android:fillColor="#0B1324"
+        android:pathData="M54,19 L81,30 L81,53.5 C81,70.5 69,82.5 54,89 C39,82.5 27,70.5 27,53.5 L27,30 Z" />
+
+    <!-- Bisel esmeralda interior -->
     <path
-        android:fillType="evenOdd"
         android:fillColor="#00FF9D"
-        android:pathData="M42,31a11,11 0 1,0 0,22a11,11 0 1,0 0,-22z M42,37a5,5 0 1,1 0,10a5,5 0 1,1 0,-10z" />
+        android:pathData="M54,23 L77,32.5 L77,53 C77,68 67,78.5 54,84.5 L54,79.5 C64.5,74 72.5,65 72.5,53 L72.5,35.5 L54,28 Z" />
+
+    <!-- Rayo central neón -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M58,28 L41,54 L53,54 L47,78 L68,49 L55,49 Z" />
+
+    <!-- Barra diagonal de bloqueo de anuncios -->
     <path
         android:fillColor="#00FF9D"
-        android:pathData="M50,39h35v8h-5v7h-6v-7h-6v7h-6v-7h-12z" />
-    <!-- Destello -->
-    <path
-        android:fillColor="#B026FF"
-        android:pathData="M80,16l3,7l7,3l-7,3l-3,7l-3,-7l-7,-3l7,-3z" />
+        android:pathData="M34,72 L72,34 L76,38 L38,76 Z" />
 </vector>

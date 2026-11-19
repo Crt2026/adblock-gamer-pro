@@ -19,10 +19,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
-/**
- * Lista de dominios publicitarios. Carga una lista publica grande (76.000+
- * dominios) desde assets y la combina con las reglas propias y las del usuario.
- */
+/** Lista de dominios publicitarios orientada a juegos móviles y apps Android. */
 public final class Blocklist {
 
     public static final String PREFS = "bloqueo_prefs";
@@ -40,48 +37,76 @@ public final class Blocklist {
     public static final String KEY_BLOCKLIST_VERSION = "blocklist_version";
 
     private static final String[] BUILTIN = {
-        // Google / AdMob / DoubleClick
+        // Google / AdMob / DoubleClick / IMA / Medición
         "googleadservices.com", "doubleclick.net", "googlesyndication.com",
         "googleadapis.com", "googleads.com", "adservice.google.com",
         "ads.google.com", "pagead2.googlesyndication.com",
         "securepubads.g.doubleclick.net", "googletagservices.com",
-        // Meta Audience Network (se conservan dominios.publicitarios)
+        "imasdk.googleapis.com", "fundingchoicesmessages.google.com",
+        "adtrafficquality.google", "ep1.adtrafficquality.google",
+        "ep2.adtrafficquality.google", "csi.gstatic.com", "app-measurement.com",
+        // Meta Audience Network
         "facebook.net", "facebookads.com", "audiencenetwork.com",
         "an.facebook.com", "ads.facebook.com", "fbads.com",
-        // AppLovin / MAX
-        "applovin.com", "app-lovin.com", "rt.applovin.com",
-        // Unity Ads
+        // AppLovin / MAX / SafeDK
+        "applovin.com", "app-lovin.com", "applvn.com", "al-cdn.com",
+        "safedk.com", "rt.applovin.com",
+        // Unity Ads (sin bloquear unity3d.com completo para no romper multijugador)
         "unityads.unity3d.com", "unityads.com", "config.unityads.unity3d.com",
-        // ironSource
-        "ironsource.com", "ironsrc.com", "supersonicads.com", "isnssdk.com",
+        "unity3dusercontent.com", "config.uca.cloud.unity3d.com",
+        "cdp.cloud.unity3d.com", "ads-privacy-api.prd.mz.internal.unity3d.com",
+        "ads-game-configuration-master.ads.prd.ie.internal.unity3d.com",
+        "thind-gke-usea.prd.data.corp.unity3d.com", "httpkafka.unityads.unity3d.com",
+        // ironSource / LevelPlay / Supersonic
+        "ironsource.com", "ironsrc.com", "ironsrc.mobi",
+        "supersonicads.com", "supersonic.com", "isnssdk.com", "atom-data.io",
         // Vungle / Liftoff
-        "vungle.com", "vungleads.com", "liftoff.io",
-        // Pangle / ByteDance
-        "pangle.io", "pangolin.com", "panglesdk.com", "byteadx.com",
-        "pglstatp.com", "byteadserving.com",
-        // Mintegral
-        "mintegral.com", "mintegrals.com", "mtgads.com", "rayjump.com",
-        // Moloco
-        "moloco.com", "molocoads.com",
-        // Otros
-        "adcolony.com", "chartboost.com", "inmobi.com", "fyber.com",
-        "inner-active.com", "pubmatic.com", "rubiconproject.com", "openx.net",
-        "criteo.com", "casalemedia.com", "bidswitch.net", "smartadserver.com",
-        "adform.net", "somoaudience.com", "yieldmo.com", "triplelift.com",
+        "vungle.com", "vungleads.com", "liftoff.io", "liftoff-creatives.io",
+        // Pangle / ByteDance / TikTok Ads
+        "pangle.io", "pangle-ads.com", "pangolin.com", "panglesdk.com",
+        "pangolin-sdk-toutiao.com", "pangolin-sdk-toutiao-b.com",
+        "byteadx.com", "pglstatp.com", "byteadserving.com", "byteoversea.com",
+        "tiktokads.com", "ads.tiktok.com",
+        // Mintegral / Mobvista / Rayjump
+        "mintegral.com", "mintegral.net", "mintegrals.com", "mtgads.com",
+        "rayjump.com", "mobvista.com",
+        // Bigo / BidMachine / Appodeal / HyprMX / Ogury / Start.io / Digital Turbine
+        "bigo.sg", "bigoad.com", "bidmachine.io", "bm-cdn.com",
+        "appodeal.com", "appodealx.com", "ogury.com", "ogury.co", "presage.io",
+        "hyprmx.com", "digitalturbine.com", "dtignite.com",
+        "fyber.com", "inner-active.com", "inner-active.mobi",
+        "startapp.com", "startappservice.com", "startappexchange.com", "start.io",
+        "smaato.net", "smaato.com", "verve.com", "pubnative.net",
+        "kidoz.net", "superawesome.tv", "yodo1.com", "yodo1api.com",
+        // Moloco / AdColony / Chartboost / InMobi / Tapjoy / Yandex / VK
+        "moloco.com", "molocoads.com", "adcolony.com", "chartboost.com",
+        "inmobi.com", "inmobicdn.net", "tapjoy.com",
+        "yandexadexchange.net", "ads.vk.com", "mytarget.ru", "ad.mail.ru",
+        // Exchanges, SSP y atribución publicitaria
+        "pubmatic.com", "rubiconproject.com", "openx.net",
+        "criteo.com", "criteo.net", "casalemedia.com", "bidswitch.net",
+        "smartadserver.com", "adform.net", "somoaudience.com", "yieldmo.com",
+        "triplelift.com", "3lift.com", "indexww.com", "sharethrough.com",
         "mobfox.com", "tapdaq.com", "admost.com", "mopub.com",
-        "startapp.com", "tapjoy.com", "vpon.com", "adnxs.com", "adsrvr.org",
-        // DoH / DoT (evitan que el DNS se salte el filtro)
-        "dns.google", "cloudflare-dns.com", "dns.quad9.net", "doh.opendns.com",
-        "dns.adguard.com", "dns.adguard-dns.com", "doh.libredns.gr",
-        "mozilla.cloudflare-dns.com", "dns11.quad9.net",
-        // Hosts DoT/DoH de los proveedores: se bloquean al resto de apps para
-        // que no esquiven el filtro (nuestro tunel usa las IPs directamente).
-        "family.adguard-dns.com", "p2.freedns.controld.com",
-        "freedns.controld.com", "dot.nl.ahadns.net", "zero.dns0.eu",
-        "family-filter-dns.cleanbrowsing.org",
+        "vpon.com", "adnxs.com", "adsrvr.org", "spotxchange.com", "spotx.tv",
+        "tremorhub.com", "teads.tv", "taboola.com", "outbrain.com",
+        "revcontent.com", "mgid.com", "propellerads.com", "kargo.com",
+        "flurry.com", "adjust.com", "kochava.com", "singular.net", "tenjin.io", "branch.io",
+        // DoH / DoT (impide que apps o WebView salten el filtro DNS)
+        "dns.google", "dns.google.com", "dns64.dns.google",
+        "cloudflare-dns.com", "chrome.cloudflare-dns.com",
+        "1dot1dot1dot1.cloudflare-dns.com", "security.cloudflare-dns.com",
+        "family.cloudflare-dns.com", "mozilla.cloudflare-dns.com",
+        "dns.quad9.net", "dns9.quad9.net", "dns10.quad9.net", "dns11.quad9.net",
+        "doh.opendns.com", "dns.adguard.com", "dns.adguard-dns.com",
+        "family.adguard-dns.com", "doh.libredns.gr", "doh.cleanbrowsing.org",
+        "dns.nextdns.io", "dns1.nextdns.io", "dns2.nextdns.io",
+        "dns.switch.ch", "dns.mullvad.net", "adblock.dns.mullvad.net",
+        "all.dns.mullvad.net", "extended.dns.mullvad.net", "base.dns.mullvad.net",
+        "p2.freedns.controld.com", "freedns.controld.com", "dns.controld.com",
+        "dot.nl.ahadns.net", "zero.dns0.eu", "family-filter-dns.cleanbrowsing.org",
         "x-oisd.freedns.controld.com", "x-hagezi-tif.freedns.controld.com",
-        "x-adguard.freedns.controld.com", "x-stevenblack.freedns.controld.com",
-        "base.dns.mullvad.net"
+        "x-adguard.freedns.controld.com", "x-stevenblack.freedns.controld.com"
     };
 
     private static volatile Set<String> ASSET_SET;
@@ -90,7 +115,7 @@ public final class Blocklist {
         if (ASSET_SET != null) return ASSET_SET;
         synchronized (Blocklist.class) {
             if (ASSET_SET != null) return ASSET_SET;
-            Set<String> set = new HashSet<>(90000);
+            Set<String> set = new HashSet<>(180000);
             for (String b : BUILTIN) set.add(norm(b));
             try {
                 File downloaded = new File(c.getFilesDir(), "ad_domains.txt");
@@ -175,71 +200,84 @@ public final class Blocklist {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
-    /** Numero de dominios cargados actualmente. */
     public static int count(Context c) { return load(c).size(); }
 
-    /** Fuerza una recarga desde el archivo (util tras actualizar). */
     public static void refresh() { ASSET_SET = null; }
 
-    /**
-     * Descarga la lista publica de StevenBlack y la guarda en el almacenamiento
-     * de la app. Devuelve el numero de dominios o -1 si falla. Llamar siempre
-     * desde un hilo secundario.
-     */
+    /** Descarga y combina HaGeZi Multi Pro (muy potente en juegos) + StevenBlack. */
     public static int download(Context c) {
+        String[] sources = {
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/pro.txt",
+            "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+        };
+        Set<String> merged = new HashSet<>(220000);
+        for (String src : sources) {
+            fetchInto(src, merged);
+        }
+        if (merged.size() < 20000) return -1;
+
+        File tmp = new File(c.getFilesDir(), "ad_domains_new.txt");
+        try (Writer w = new OutputStreamWriter(
+                new FileOutputStream(tmp), StandardCharsets.UTF_8)) {
+            for (String host : merged) {
+                w.write(host);
+                w.write('\n');
+            }
+        } catch (Exception e) {
+            tmp.delete();
+            return -1;
+        }
+        File finalFile = new File(c.getFilesDir(), "ad_domains.txt");
+        if (finalFile.exists()) finalFile.delete();
+        if (!tmp.renameTo(finalFile)) return -1;
+        refresh();
+        prefs(c).edit().putInt(KEY_BLOCKLIST_VERSION, merged.size()).apply();
+        return merged.size();
+    }
+
+    private static void fetchInto(String urlStr, Set<String> out) {
         HttpURLConnection conn = null;
         try {
-            URL url = new URL("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts");
+            URL url = new URL(urlStr);
             conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(12000);
-            conn.setReadTimeout(20000);
+            conn.setReadTimeout(25000);
             conn.setRequestMethod("GET");
-            int code = conn.getResponseCode();
-            if (code != HttpURLConnection.HTTP_OK) return -1;
-
-            File tmp = new File(c.getFilesDir(), "ad_domains_new.txt");
-            int n = 0;
+            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return;
             try (InputStream in = conn.getInputStream();
                  BufferedReader br = new BufferedReader(
-                         new InputStreamReader(in, StandardCharsets.UTF_8), 65536);
-                 Writer w = new OutputStreamWriter(
-                         new FileOutputStream(tmp), StandardCharsets.UTF_8)) {
+                         new InputStreamReader(in, StandardCharsets.UTF_8), 65536)) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String host = extractHost(line);
                     if (host != null && !host.startsWith("localhost")) {
-                        w.write(host);
-                        w.write('\n');
-                        n++;
+                        out.add(host);
                     }
                 }
             }
-            if (n < 10000) { tmp.delete(); return -1; }
-            File finalFile = new File(c.getFilesDir(), "ad_domains.txt");
-            if (finalFile.exists()) finalFile.delete();
-            if (!tmp.renameTo(finalFile)) return -1;
-            refresh();
-            prefs(c).edit().putInt(KEY_BLOCKLIST_VERSION, n).apply();
-            return n;
-        } catch (Exception e) {
-            return -1;
+        } catch (Exception ignored) {
         } finally {
             if (conn != null) conn.disconnect();
         }
     }
 
-    /** Extrae el dominio de una linea formato hosts: "0.0.0.0 ejemplo.com". */
     private static String extractHost(String line) {
         if (line == null) return null;
         String s = line.trim();
-        if (s.isEmpty() || s.startsWith("#")) return null;
+        if (s.isEmpty() || s.startsWith("#") || s.startsWith("!")) return null;
         int i = s.indexOf('#');
         if (i >= 0) s = s.substring(0, i).trim();
+        if (s.isEmpty()) return null;
+        if (s.startsWith("||") && s.endsWith("^")) {
+            s = s.substring(2, s.length() - 1);
+        }
         String[] parts = s.split("\\s+");
-        if (parts.length < 2) return null;
-        if (!parts[0].equals("0.0.0.0") && !parts[0].equals("::")) return null;
-        String host = norm(parts[1]);
-        return host.isEmpty() ? null : host;
+        String raw = parts.length >= 2 && (parts[0].equals("0.0.0.0") || parts[0].equals("127.0.0.1") || parts[0].equals("::"))
+                ? parts[1]
+                : (parts.length == 1 ? parts[0] : null);
+        if (raw == null) return null;
+        String host = norm(raw);
+        return host.contains(".") ? host : null;
     }
 
     private Blocklist() {}

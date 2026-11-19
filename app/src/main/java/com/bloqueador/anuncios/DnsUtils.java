@@ -1,12 +1,10 @@
 package com.bloqueador.anuncios;
 
-import java.nio.ByteBuffer;
 import java.util.Locale;
 
-/** Utilidades mínimas para leer la pregunta DNS y responder NXDOMAIN. */
+/** Utilidades DNS: lectura de QNAME/QTYPE y respuestas 0.0.0.0, ::, NODATA y NXDOMAIN. */
 public final class DnsUtils {
 
-    /** Devuelve el nombre consultado (sin el punto final) o null si no se puede leer. */
     public static String questionName(byte[] p, int len) {
         if (len < 12) return null;
         int qd = ((p[4] & 0xFF) << 8) | (p[5] & 0xFF);
@@ -20,7 +18,7 @@ public final class DnsUtils {
                 pos++;
                 break;
             }
-            if ((labelLen & 0xC0) != 0) return null; // compresión: unsupported en pregunta
+            if ((labelLen & 0xC0) != 0) return null;
             pos++;
             if (pos + labelLen > len) return null;
             for (int i = 0; i < labelLen; i++) {
@@ -36,53 +34,73 @@ public final class DnsUtils {
         return host.toLowerCase(Locale.ROOT);
     }
 
-    /** Construye una respuesta NXDOMAIN para la consulta recibida. */
+    /** Respuesta NXDOMAIN (RCODE=3). */
     public static byte[] nxdomain(byte[] query, int len) {
         if (len < 12 || len > 1500) return null;
-        // La pregunta completa: cabecera + QNAME + QTYPE/QCLASS.
         int qEnd = findQuestionEnd(query, len);
         if (qEnd < 0 || qEnd > len) return null;
         byte[] out = new byte[qEnd];
         System.arraycopy(query, 0, out, 0, qEnd);
-
-        // flags: QR=1, AA=1, RA=1, RCODE=3 (NXDOMAIN)
-        int flags = 0x8183;
-        out[2] = (byte) (flags >> 8);
-        out[3] = (byte) flags;
-
-        // QDCOUNT se mantiene; ANCOUNT/NSCOUNT/ARCOUNT a 0
+        put16(out, 2, 0x8183);
         put16(out, 6, 0);
         put16(out, 8, 0);
         put16(out, 10, 0);
         return out;
     }
 
-    /** Construye una respuesta A=0.0.0.0 (útil para algunos juegos que ignoran NXDOMAIN). */
-    public static byte[] zeroA(byte[] query, int len) {
-        byte[] base = nxdomain(query, len);
-        if (base == null) return null;
-        int qEnd = base.length;
-
-        byte[] answer = new byte[] {
-            0, 0, 0, 1,       // NAME: puntero al offset 12
-            0, 1,             // TYPE A
-            0, 1,             // CLASS IN
-            0, 0, 0, 60,      // TTL
-            0, 4,             // RDLENGTH
-            0, 0, 0, 0        // 0.0.0.0
-        };
-        answer[0] = (byte) 0xC0;
-        answer[1] = 12;
-
-        byte[] out = new byte[qEnd + answer.length];
-        System.arraycopy(base, 0, out, 0, qEnd);
-        System.arraycopy(answer, 0, out, qEnd, answer.length);
-        put16(out, 2, 0x8180); // QR|AA|RA, RCODE=0
-        put16(out, 6, 1);      // una respuesta
+    /** Respuesta NODATA (RCODE=0, ANCOUNT=0) para AAAA / HTTPS / SVCB. */
+    public static byte[] nodata(byte[] query, int len) {
+        byte[] out = nxdomain(query, len);
+        if (out == null) return null;
+        put16(out, 2, 0x8180);
         return out;
     }
 
-    /** Tipo de la pregunta (1 = A, 28 = AAAA). */
+    /** Respuesta A=0.0.0.0. */
+    public static byte[] zeroA(byte[] query, int len) {
+        byte[] base = nodata(query, len);
+        if (base == null) return null;
+        int qEnd = base.length;
+        byte[] answer = new byte[] {
+            (byte) 0xC0, 12,
+            0, 1,             // TYPE A
+            0, 1,             // CLASS IN
+            0, 0, 0, 60,      // TTL 60s
+            0, 4,             // RDLENGTH 4
+            0, 0, 0, 0        // 0.0.0.0
+        };
+        byte[] out = new byte[qEnd + answer.length];
+        System.arraycopy(base, 0, out, 0, qEnd);
+        System.arraycopy(answer, 0, out, qEnd, answer.length);
+        put16(out, 6, 1);
+        return out;
+    }
+
+    /** Respuesta AAAA=:: (16 bytes en cero). */
+    public static byte[] zeroAAAA(byte[] query, int len) {
+        byte[] base = nodata(query, len);
+        if (base == null) return null;
+        int qEnd = base.length;
+        byte[] answer = new byte[] {
+            (byte) 0xC0, 12,
+            0, 28,            // TYPE AAAA
+            0, 1,             // CLASS IN
+            0, 0, 0, 60,      // TTL 60s
+            0, 16,            // RDLENGTH 16
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0
+        };
+        byte[] out = new byte[qEnd + answer.length];
+        System.arraycopy(base, 0, out, 0, qEnd);
+        System.arraycopy(answer, 0, out, qEnd, answer.length);
+        put16(out, 6, 1);
+        return out;
+    }
+
+    public static void setId(byte[] dns, int id) {
+        if (dns != null && dns.length >= 2) put16(dns, 0, id);
+    }
+
     public static int qtype(byte[] p, int len) {
         int pos = 12;
         int jumps = 0;
@@ -109,7 +127,7 @@ public final class DnsUtils {
             pos += 1 + l;
         }
         if (pos + 4 > len) return -1;
-        return pos + 4; // + QTYPE + QCLASS
+        return pos + 4;
     }
 
     private static void put16(byte[] b, int i, int v) {

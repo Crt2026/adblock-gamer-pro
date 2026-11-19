@@ -3,7 +3,10 @@ package com.bloqueador.anuncios;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -90,7 +93,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Pantalla de emergencia: nunca cerramos la app sin explicar el motivo. */
     private void showErrorScreen(Throwable t) {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -159,9 +161,8 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(Color.parseColor("#080B14"));
         root.setPadding(p, dp(18), p, dp(30));
 
-        // --- Cabecera ---
         TextView title = new TextView(this);
-        title.setText("ADBLOCK GAMER PRO");
+        title.setText("ADBLOCK GAMER PRO v5.0");
         title.setTextSize(19);
         title.setTypeface(null, Typeface.BOLD);
         title.setTextColor(Color.parseColor("#00E5FF"));
@@ -169,7 +170,7 @@ public class MainActivity extends Activity {
         root.addView(title);
 
         tvSub = new TextView(this);
-        tvSub.setText("Bloqueador para juegos y apps");
+        tvSub.setText("WiFi + Datos Móviles · Bloqueo para juegos y apps");
         tvSub.setTextSize(12);
         tvSub.setTextColor(Color.parseColor("#8FA3C8"));
         tvSub.setGravity(Gravity.CENTER);
@@ -182,16 +183,15 @@ public class MainActivity extends Activity {
         tvNetwork.setPadding(0, dp(4), 0, dp(12));
         root.addView(tvNetwork);
 
-        // --- Boton central ---
         btnPower = new LinearLayout(this);
         btnPower.setOrientation(LinearLayout.VERTICAL);
         btnPower.setGravity(Gravity.CENTER);
-        int size = dp(150);
+        int size = dp(154);
         btnPower.setLayoutParams(new LinearLayout.LayoutParams(size, size));
         btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
         ivKey = new ImageView(this);
         ivKey.setImageResource(R.drawable.ic_key_gamer);
-        ivKey.setLayoutParams(new LinearLayout.LayoutParams(dp(62), dp(62)));
+        ivKey.setLayoutParams(new LinearLayout.LayoutParams(dp(64), dp(64)));
         btnPower.addView(ivKey);
         tvKeyLabel = new TextView(this);
         tvKeyLabel.setText("ACTIVAR");
@@ -208,7 +208,7 @@ public class MainActivity extends Activity {
 
         tvState = new TextView(this);
         tvState.setText("DESPROTEGIDO");
-        tvState.setTextSize(20);
+        tvState.setTextSize(19);
         tvState.setTypeface(null, Typeface.BOLD);
         tvState.setGravity(Gravity.CENTER);
         tvState.setTextColor(Color.parseColor("#FF3B5C"));
@@ -216,25 +216,22 @@ public class MainActivity extends Activity {
         root.addView(tvState);
 
         TextView hint = new TextView(this);
-        hint.setText("Los anuncios de tus juegos se están bloqueando");
+        hint.setText("Cuando está activo verás la llave VPN en la barra superior de Android");
         hint.setTextSize(11);
         hint.setTextColor(Color.parseColor("#8FA3C8"));
         hint.setGravity(Gravity.CENTER);
         root.addView(hint);
 
-        // --- Contadores ---
         LinearLayout counters = new LinearLayout(this);
         counters.setOrientation(LinearLayout.HORIZONTAL);
         counters.setWeightSum(2);
         counters.setPadding(0, dp(14), 0, dp(6));
         tvAds = counterCard(counters, "0", "Anuncios\nbloqueados", "#00FF9D");
-        tvQueries = counterCard(counters, "0", "Consultas\nanalyzadas", "#00E5FF");
+        tvQueries = counterCard(counters, "0", "Consultas\nanalizadas", "#00E5FF");
         root.addView(counters);
 
-        // --- Ultimo dominio ---
         LinearLayout lastCard = card();
-        TextView l1 = small("ÚLTIMO DOMINIO BLOQUEADO", "#B026FF");
-        lastCard.addView(l1);
+        lastCard.addView(small("ÚLTIMO DOMINIO BLOQUEADO", "#B026FF"));
         tvLast = new TextView(this);
         tvLast.setText("—");
         tvLast.setTextSize(13);
@@ -243,7 +240,6 @@ public class MainActivity extends Activity {
         lastCard.addView(tvLast);
         root.addView(lastCard);
 
-        // --- Estadisticas ---
         LinearLayout statsCard = card();
         statsCard.addView(small("ESTADÍSTICAS DEL TÚNEL", "#00E5FF"));
         tvStats = new TextView(this);
@@ -253,22 +249,20 @@ public class MainActivity extends Activity {
         statsCard.addView(tvStats);
         root.addView(statsCard);
 
-        // --- Opciones ---
         root.addView(sectionTitle("PROTECCIÓN AVANZADA"));
         root.addView(gamerSwitch("Bloquear anuncios por IP fija",
-                "Corta anuncios que llegan por IP sin usar DNS. Vigila 73 direcciones.", 0));
+                "Inspecciona SNI/HTTP en juegos y corta anuncios sin DNS.", 0));
         root.addView(gamerSwitch("Anuncios de Meta bloqueados",
-                "Corta 'Ads served by Meta' (Facebook, Instagram). Las apps de Meta quedan fuera de la VPN para no romper chats.", 1));
+                "Corta 'Ads served by Meta' en juegos. WhatsApp, Instagram y Facebook quedan fuera para no romper chats.", 1));
         root.addView(gamerSwitch("Bloquear QUIC (UDP 443)",
                 "Impide que los anuncios esquiven el filtro con HTTP/3.", 2));
         root.addView(gamerSwitch("Bloquear DNS cifrado (853 / DoH)",
-                "Corta DoT y DoH en IPv4 e IPv6 para que ninguna app resuelva nombres fuera del filtro.", 3));
-        root.addView(gamerSwitch("Notificar cada anuncio bloqueado",
-                "Aviso silencioso por cada dominio publicitario cortado.", 4));
+                "Corta DoT y DoH directo en IPv4 e IPv6 para forzar el filtro.", 3));
+        root.addView(gamerSwitch("Notificar anuncios bloqueados",
+                "Muestra aviso en Android cuando se corta un anuncio.", 4));
 
-        // --- Servidor DNS ---
         LinearLayout dnsCard = card();
-        dnsCard.addView(small("SERVIDOR DNS (SE APLICA EN WI-FI Y DATOS)", "#00E5FF"));
+        dnsCard.addView(small("SERVIDOR DNS (WIFI Y DATOS MÓVILES)", "#00E5FF"));
         spProvider = new Spinner(this);
         String[] names = new String[DnsProviders.ALL.length];
         for (int i = 0; i < names.length; i++) names[i] = DnsProviders.ALL[i].name;
@@ -276,15 +270,11 @@ public class MainActivity extends Activity {
                 android.R.layout.simple_spinner_dropdown_item, names);
         spProvider.setAdapter(ad);
         dnsCard.addView(spProvider);
-        // El listener se coloca en loadPrefs(), despues de fijar la seleccion,
-        // para que el evento inicial NO cambie el proveedor guardado.
         root.addView(dnsCard);
 
-        // --- Historial en vivo ---
         root.addView(sectionTitle("HISTORIAL DE TRÁFICO EN VIVO"));
         TextView histInfo = new TextView(this);
-        histInfo.setText("Dominios que pasan por el filtro. Rojo = bloqueado, verde = permitido."
-                + " Toca Permitir o Bloquear para cambiar uno.");
+        histInfo.setText("Dominios que pasan por el filtro. Rojo = bloqueado, verde = permitido.");
         histInfo.setTextSize(11);
         histInfo.setTextColor(Color.parseColor("#8FA3C8"));
         root.addView(histInfo);
@@ -305,18 +295,16 @@ public class MainActivity extends Activity {
         });
         root.addView(reset);
 
-        // --- Anuncios en cache ---
-        root.addView(sectionTitle("ANUNCIOS YA GUARDADOS EN CACHE"));
+        root.addView(sectionTitle("ANUNCIOS YA GUARDADOS EN CACHÉ"));
         TextView cacheInfo = new TextView(this);
-        cacheInfo.setText("Si un anuncio se descargó antes de activar, puede salir una vez más."
-                + " Para quitarlo, vacía la caché de Google Play Services y del juego.");
+        cacheInfo.setText("Si un juego ya descargó anuncios antes de activar la llave, cierra el juego o limpia su caché.");
         cacheInfo.setTextSize(11);
         cacheInfo.setTextColor(Color.parseColor("#8FA3C8"));
         root.addView(cacheInfo);
         Button play = gamerButton("Abrir Google Play Services", "#00E5FF");
         play.setOnClickListener(v -> openPackage("com.google.android.gms"));
         root.addView(play);
-        Button allApps = gamerButton("Ver todas las apps", "#00E5FF");
+        Button allApps = gamerButton("Ver todas las apps (limpiar caché)", "#00E5FF");
         allApps.setOnClickListener(v -> {
             Intent i = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
             try { startActivity(i); } catch (Exception e) { toast("No se pudo abrir"); }
@@ -324,7 +312,7 @@ public class MainActivity extends Activity {
         root.addView(allApps);
         Button update = gamerButton("Actualizar lista de bloqueo (descargar)", "#00FF9D");
         update.setOnClickListener(v -> {
-            toast("Descargando lista desde Internet...");
+            toast("Descargando HaGeZi Pro + StevenBlack...");
             new Thread(() -> {
                 int n = Blocklist.download(this);
                 handler.post(() -> {
@@ -340,8 +328,7 @@ public class MainActivity extends Activity {
         });
         root.addView(update);
 
-        // --- Permisos ---
-        root.addView(sectionTitle("PERMISOS DESDE ANDROID"));
+        root.addView(sectionTitle("TODOS LOS PERMISOS DE ANDROID"));
         boxPerms = new LinearLayout(this);
         boxPerms.setOrientation(LinearLayout.VERTICAL);
         root.addView(boxPerms);
@@ -349,23 +336,32 @@ public class MainActivity extends Activity {
         tvPerms.setTextSize(11);
         tvPerms.setTextColor(Color.parseColor("#8FA3C8"));
         root.addView(tvPerms);
-        Button vpnBtn = gamerButton("Dar permiso VPN", "#00E5FF");
+
+        Button grantAllBtn = gamerButton("Conceder todos los permisos pendientes", "#00FF9D");
+        grantAllBtn.setOnClickListener(v -> grantNextMissingPermission());
+        root.addView(grantAllBtn);
+        Button vpnBtn = gamerButton("1. Dar permiso VPN (activar llave)", "#00E5FF");
         vpnBtn.setOnClickListener(v -> startProtection());
         root.addView(vpnBtn);
-        Button notifBtn = gamerButton("Activar notificaciones", "#00E5FF");
-        notifBtn.setOnClickListener(v -> openNotificationSettings());
+        Button notifBtn = gamerButton("2. Activar notificaciones desde Android", "#00E5FF");
+        notifBtn.setOnClickListener(v -> activateNotificationsFromAndroid());
         root.addView(notifBtn);
-        Button battBtn = gamerButton("No apagar la app con la batería", "#00E5FF");
+        Button testNotifBtn = gamerButton("Probar notificación ahora", "#00FF9D");
+        testNotifBtn.setOnClickListener(v -> sendTestNotification());
+        root.addView(testNotifBtn);
+        Button battBtn = gamerButton("3. No apagar con la batería", "#00E5FF");
         battBtn.setOnClickListener(v -> requestBattery());
         root.addView(battBtn);
-        Button bootBtn = gamerButton("Arranque automático (info)", "#B026FF");
-        bootBtn.setOnClickListener(v -> toast("La app se inicia sola al encender el móvil si el interruptor está activo."));
-        root.addView(bootBtn);
+        Button dataBtn = gamerButton("4. Permitir datos 4G/5G sin restricción", "#00E5FF");
+        dataBtn.setOnClickListener(v -> requestUnrestrictedData());
+        root.addView(dataBtn);
+        Button appInfoBtn = gamerButton("Abrir ajustes completos de la app", "#B026FF");
+        appInfoBtn.setOnClickListener(v -> openPackage(getPackageName()));
+        root.addView(appInfoBtn);
         Button diag = gamerButton("Ver registro de errores (diagnóstico)", "#FF3B5C");
         diag.setOnClickListener(v -> showDiagnostic());
         root.addView(diag);
 
-        // --- Reglas manuales ---
         root.addView(sectionTitle("REGLAS MANUALES"));
         root.addView(small("Dominios extra a bloquear (uno por línea)", "#8FA3C8"));
         etBlock = editor("ej: pub.ejemplo.com");
@@ -381,15 +377,6 @@ public class MainActivity extends Activity {
         tvRules.setTextColor(Color.parseColor("#8FA3C8"));
         tvRules.setGravity(Gravity.CENTER);
         root.addView(tvRules);
-
-        TextView note = new TextView(this);
-        note.setText("\nSin wakelocks: no enciende la pantalla ni calienta el móvil."
-                + " Los anuncios con recompensa pueden no dar premio si se bloquean:"
-                + " añade su dominio a Excepciones.");
-        note.setTextSize(10);
-        note.setTextColor(Color.parseColor("#5D7296"));
-        note.setPadding(dp(4), dp(14), dp(4), dp(4));
-        root.addView(note);
 
         ScrollView sv = new ScrollView(this);
         sv.setBackgroundColor(Color.parseColor("#080B14"));
@@ -484,7 +471,10 @@ public class MainActivity extends Activity {
             else if (w == 1) e.putBoolean(Blocklist.KEY_META_BLOCK, v);
             else if (w == 2) e.putBoolean(Blocklist.KEY_BLOCK_QUIC, v);
             else if (w == 3) e.putBoolean(Blocklist.KEY_BLOCK_DOT, v);
-            else e.putBoolean(Blocklist.KEY_NOTIFY_BLOCKS, v);
+            else {
+                e.putBoolean(Blocklist.KEY_NOTIFY_BLOCKS, v);
+                if (v && !areNotificationsReallyEnabled()) activateNotificationsFromAndroid();
+            }
             e.apply();
             if (AdBlockVpnService.SERVICE_RUNNING.get()) restartVpn();
         });
@@ -498,8 +488,10 @@ public class MainActivity extends Activity {
         b.setTextSize(12);
         b.setTextColor(Color.WHITE);
         b.setBackgroundColor(Color.parseColor("#1B2A4A"));
-        b.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, dp(4), 0, dp(4));
+        b.setLayoutParams(lp);
         return b;
     }
 
@@ -526,7 +518,7 @@ public class MainActivity extends Activity {
     private void loadPrefs() {
         loadingPrefs = true;
         swSni.setChecked(prefs.getBoolean(Blocklist.KEY_SNI_MODE, true));
-        swMeta.setChecked(prefs.getBoolean(Blocklist.KEY_META_BLOCK, false));
+        swMeta.setChecked(prefs.getBoolean(Blocklist.KEY_META_BLOCK, true));
         swQuic.setChecked(prefs.getBoolean(Blocklist.KEY_BLOCK_QUIC, true));
         swDot.setChecked(prefs.getBoolean(Blocklist.KEY_BLOCK_DOT, true));
         swNotify.setChecked(prefs.getBoolean(Blocklist.KEY_NOTIFY_BLOCKS, true));
@@ -558,22 +550,22 @@ public class MainActivity extends Activity {
             tvState.setText("DESPROTEGIDO");
             tvState.setTextColor(Color.parseColor("#FF3B5C"));
             btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
-            tvKeyLabel.setText("ACTIVAR");
+            tvKeyLabel.setText("ACTIVAR LLAVE");
         } else if (!real) {
-            if (enabledAt > 0 && System.currentTimeMillis() - enabledAt > 8000) {
-                tvState.setText("NO SE PUDO ACTIVAR");
+            if (enabledAt > 0 && System.currentTimeMillis() - enabledAt > 6000) {
+                tvState.setText("NO SE PUDO ACTIVAR (TOCA REINTENTAR)");
                 tvKeyLabel.setText("REINTENTAR");
             } else {
-                tvState.setText("ACTIVANDO...");
+                tvState.setText("ACTIVANDO LLAVE VPN...");
                 tvKeyLabel.setText("ACEPTA VPN");
             }
             tvState.setTextColor(Color.parseColor("#FFC73D"));
             btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
         } else {
-            tvState.setText("PROTEGIDO");
+            tvState.setText("PROTEGIDO · LLAVE ACTIVA");
             tvState.setTextColor(Color.parseColor("#00FF9D"));
             btnPower.setBackgroundResource(R.drawable.bg_gamer_on);
-            tvKeyLabel.setText("DESACTIVAR");
+            tvKeyLabel.setText("LLAVE ACTIVA");
         }
         tvNetwork.setText(networkName());
 
@@ -605,8 +597,8 @@ public class MainActivity extends Activity {
             if (cm == null) return "SIN RED";
             NetworkInfo n = cm.getActiveNetworkInfo();
             if (n == null || !n.isConnected()) return "SIN RED";
-            if (n.getType() == ConnectivityManager.TYPE_WIFI) return "◉ WiFi conectado";
-            return "◉ Datos móviles conectados";
+            if (n.getType() == ConnectivityManager.TYPE_WIFI) return "◉ WiFi conectado (VPN lista)";
+            return "◉ Datos móviles 4G/5G conectados (VPN lista)";
         } catch (Exception e) { return "RED ACTIVA"; }
     }
 
@@ -625,7 +617,7 @@ public class MainActivity extends Activity {
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setPadding(dp(4), dp(3), dp(4), dp(3));
                 TextView dot = new TextView(this);
-                dot.setText(e.blocked ? "● " : "● ");
+                dot.setText("● ");
                 dot.setTextColor(Color.parseColor(e.blocked ? "#FF3B5C" : "#00FF9D"));
                 dot.setTextSize(13);
                 row.addView(dot);
@@ -683,6 +675,21 @@ public class MainActivity extends Activity {
         toast(block ? "Bloqueado: " + domain : "Permitido: " + domain);
     }
 
+    private void sendServiceAction(String action) {
+        Intent i = new Intent(this, AdBlockVpnService.class).setAction(action);
+        try {
+            if (AdBlockVpnService.ACTION_START.equals(action)
+                    && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(i);
+            } else {
+                startService(i);
+            }
+        } catch (Exception e) {
+            CrashLogger.log(this, e);
+            toast("Error al iniciar servicio VPN");
+        }
+    }
+
     private void toggleProtection() {
         boolean on = !prefs.getBoolean(Blocklist.KEY_ENABLED, false);
         prefs.edit().putBoolean(Blocklist.KEY_ENABLED, on).apply();
@@ -697,13 +704,14 @@ public class MainActivity extends Activity {
             startActivityForResult(prepare, REQ_VPN);
             return;
         }
-        startService(new Intent(this, AdBlockVpnService.class)
-                .setAction(AdBlockVpnService.ACTION_START));
+        prefs.edit().putBoolean(Blocklist.KEY_ENABLED, true).apply();
+        enabledAt = System.currentTimeMillis();
+        sendServiceAction(AdBlockVpnService.ACTION_START);
+        refresh();
     }
 
     private void stopProtection() {
-        startService(new Intent(this, AdBlockVpnService.class)
-                .setAction(AdBlockVpnService.ACTION_STOP));
+        sendServiceAction(AdBlockVpnService.ACTION_STOP);
     }
 
     private void restartVpn() {
@@ -712,8 +720,7 @@ public class MainActivity extends Activity {
     }
 
     private void reloadRules() {
-        startService(new Intent(this, AdBlockVpnService.class)
-                .setAction(AdBlockVpnService.ACTION_RELOAD));
+        sendServiceAction(AdBlockVpnService.ACTION_RELOAD);
     }
 
     private void saveAndApply() {
@@ -728,18 +735,18 @@ public class MainActivity extends Activity {
 
     private void updatePermissions() {
         boolean vpn = VpnService.prepare(this) == null;
-        boolean notif = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                == PackageManager.PERMISSION_GRANTED;
+        boolean notif = areNotificationsReallyEnabled();
         boolean batt = isBatteryExempt();
-        tvPerms.setText("VPN " + mark(vpn) + " | Notificaciones " + mark(notif)
-                + " | Batería " + mark(batt) + " | Arranque " + mark(true));
+        boolean dataOk = isBackgroundDataAllowed();
+        tvPerms.setText("VPN " + mark(vpn) + " | Notif " + mark(notif)
+                + " | Batería " + mark(batt) + " | Datos 4G/5G " + mark(dataOk));
 
         boxPerms.removeAllViews();
-        addPermRow("VPN (bloquear tráfico)", vpn);
-        addPermRow("Notificaciones", notif);
-        addPermRow("Sin optimización de batería", batt);
-        addPermRow("Arranque automático", true);
+        addPermRow("VPN del sistema (llave activa)", vpn);
+        addPermRow("Notificaciones de Android activadas", notif);
+        addPermRow("Batería sin restricciones", batt);
+        addPermRow("Datos móviles sin restricción (4G/5G)", dataOk);
+        addPermRow("Arranque automático al encender", true);
     }
 
     private void addPermRow(String name, boolean ok) {
@@ -753,11 +760,93 @@ public class MainActivity extends Activity {
 
     private String mark(boolean ok) { return ok ? "✓" : "✗"; }
 
+    private boolean areNotificationsReallyEnabled() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        return nm == null || nm.areNotificationsEnabled();
+    }
+
     private boolean isBatteryExempt() {
         try {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             return pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
         } catch (Exception e) { return false; }
+    }
+
+    private boolean isBackgroundDataAllowed() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return true;
+            return cm.getRestrictBackgroundStatus()
+                    != ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED;
+        } catch (Exception e) { return true; }
+    }
+
+    private void grantNextMissingPermission() {
+        if (VpnService.prepare(this) != null) {
+            startProtection();
+        } else if (!areNotificationsReallyEnabled()) {
+            activateNotificationsFromAndroid();
+        } else if (!isBatteryExempt()) {
+            requestBattery();
+        } else if (!isBackgroundDataAllowed()) {
+            requestUnrestrictedData();
+        } else {
+            toast("¡Todos los permisos ya están concedidos!");
+        }
+    }
+
+    private void activateNotificationsFromAndroid() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS }, REQ_NOTIF);
+                return;
+            }
+            requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS }, REQ_NOTIF);
+            return;
+        }
+        openNotificationSettings();
+    }
+
+    private void sendTestNotification() {
+        if (!areNotificationsReallyEnabled()) {
+            toast("Primero activa el permiso de notificaciones");
+            activateNotificationsFromAndroid();
+            return;
+        }
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            String chId = "bloqueo_alertas_channel";
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel ch = new NotificationChannel(chId,
+                        "Alertas de anuncios bloqueados", NotificationManager.IMPORTANCE_DEFAULT);
+                nm.createNotificationChannel(ch);
+            }
+            Intent i = new Intent(this, MainActivity.class);
+            int fl = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) fl |= PendingIntent.FLAG_IMMUTABLE;
+            PendingIntent pi = PendingIntent.getActivity(this, 2, i, fl);
+            Notification.Builder b = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                    ? new Notification.Builder(this, chId)
+                    : new Notification.Builder(this);
+            b.setSmallIcon(R.drawable.ic_stat_shield)
+                    .setContentTitle("Adblock Gamer Pro v5.0")
+                    .setContentText("Notificaciones funcionando correctamente")
+                    .setContentIntent(pi)
+                    .setAutoCancel(true);
+            nm.notify(2002, b.build());
+            toast("Notificación de prueba enviada");
+        } catch (Exception e) {
+            toast("No se pudo enviar notificación");
+        }
     }
 
     private void requestBattery() {
@@ -766,6 +855,16 @@ public class MainActivity extends Activity {
             i.setData(Uri.parse("package:" + getPackageName()));
             startActivity(i);
         } catch (Exception e) { toast("No se pudo abrir el ajuste de batería"); }
+    }
+
+    private void requestUnrestrictedData() {
+        try {
+            Intent i = new Intent(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS);
+            i.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(i);
+        } catch (Exception e) {
+            openPackage(getPackageName());
+        }
     }
 
     private void openNotificationSettings() {
@@ -787,7 +886,7 @@ public class MainActivity extends Activity {
             Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             i.setData(Uri.parse("package:" + pkg));
             startActivity(i);
-        } catch (Exception e) { toast("Google Play Services no está instalado"); }
+        } catch (Exception e) { toast("No se pudo abrir los ajustes"); }
     }
 
     private void requestNotifications() {
@@ -801,6 +900,10 @@ public class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int req, String[] p, int[] r) {
         super.onRequestPermissionsResult(req, p, r);
+        if (req == REQ_NOTIF && r.length > 0 && r[0] != PackageManager.PERMISSION_GRANTED) {
+            toast("Actívalas en Ajustes > Notificaciones");
+            openNotificationSettings();
+        }
         refresh();
     }
 
@@ -808,8 +911,9 @@ public class MainActivity extends Activity {
         super.onActivityResult(req, res, data);
         if (req == REQ_VPN) {
             if (res == RESULT_OK) {
-                startService(new Intent(this, AdBlockVpnService.class)
-                        .setAction(AdBlockVpnService.ACTION_START));
+                prefs.edit().putBoolean(Blocklist.KEY_ENABLED, true).apply();
+                enabledAt = System.currentTimeMillis();
+                sendServiceAction(AdBlockVpnService.ACTION_START);
             } else {
                 prefs.edit().putBoolean(Blocklist.KEY_ENABLED, false).apply();
                 toast("Permiso VPN denegado");
