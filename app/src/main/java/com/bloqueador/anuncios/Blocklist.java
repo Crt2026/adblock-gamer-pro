@@ -275,10 +275,11 @@ public final class Blocklist {
         try {
             URL url = new URL(urlStr);
             conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(12000);
-            conn.setReadTimeout(25000);
+            conn.setInstanceFollowRedirects(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(45000);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "AdblockGamerPro/5.1");
+            conn.setRequestProperty("User-Agent", "AdblockGamerPro/5.2");
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return;
             try (InputStream in = conn.getInputStream();
                  BufferedReader br = new BufferedReader(

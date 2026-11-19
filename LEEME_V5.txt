@@ -1,10 +1,9 @@
-ADBLOCK GAMER PRO v5.1 - PARCHE COMPLETO
+ADBLOCK GAMER PRO v5.2 - PARCHE COMPLETO
 =========================================
 
 COMO APLICAR ESTE PARCHE EN TU CARPETA:
 1. Descomprime este ZIP encima de tu carpeta "adblock-gamer-pro" y reemplaza los archivos cuando Windows te pregunte.
-2. Si quieres usar tambien el nuevo icono PNG generado (512px y mipmap-*), recuerda que Android 8+ usa primero "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" (que apunta a "res/drawable/ic_foreground.xml", ya mejorado en este parche).
-   Si prefieres usar exactamente la imagen PNG metalica 3D como icono en todos los Android, simplemente borra los 2 XML de "app/src/main/res/mipmap-anydpi-v26/" y deja los PNG de "mipmap-*".
+2. Incluye todos los iconos vectoriales completos (barra inferior, permisos, barra de estado, icono adaptativo y PNGs mipmap).
 3. Compila el APK desde PowerShell en tu carpeta:
    gradle assembleDebug --no-daemon
 4. Instala el nuevo APK (app/build/outputs/apk/debug/app-debug.apk).

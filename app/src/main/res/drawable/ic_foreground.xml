@@ -5,28 +5,34 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Halo exterior sutil del escudo -->
+    <!-- Halo exterior dentro de zona segura -->
     <path
         android:fillColor="#00E5FF"
-        android:pathData="M54,14 L86,27 L86,54 C86,74 72,88 54,95 C36,88 22,74 22,54 L22,27 Z" />
+        android:pathData="M54,20 L80,30.5 L80,53 C80,69.5 68.5,81.5 54,87.5 C39.5,81.5 28,69.5 28,53 L28,30.5 Z" />
 
-    <!-- Marco interno oscuro -->
+    <!-- Cuerpo oscuro interior -->
     <path
         android:fillColor="#0B1324"
-        android:pathData="M54,19 L81,30 L81,53.5 C81,70.5 69,82.5 54,89 C39,82.5 27,70.5 27,53.5 L27,30 Z" />
+        android:pathData="M54,24 L76,33 L76,53 C76,67 66.5,77.2 54,82.5 C41.5,77.2 32,67 32,53 L32,33 Z" />
 
-    <!-- Bisel esmeralda interior -->
+    <!-- Reflejo esmeralda mitad derecha -->
     <path
-        android:fillColor="#00FF9D"
-        android:pathData="M54,23 L77,32.5 L77,53 C77,68 67,78.5 54,84.5 L54,79.5 C64.5,74 72.5,65 72.5,53 L72.5,35.5 L54,28 Z" />
+        android:fillColor="#00E68A"
+        android:fillAlpha="0.22"
+        android:pathData="M54,24 L76,33 L76,53 C76,67 66.5,77.2 54,82.5 Z" />
 
-    <!-- Rayo central neón -->
+    <!-- Bisel esmeralda sutil -->
+    <path
+        android:fillColor="#00E68A"
+        android:pathData="M54,27.5 L72.5,35 L72.5,52.8 C72.5,64.8 64.5,73.5 54,78.5 L54,74.5 C62.5,70 69,62.5 69,52.8 L69,37.5 L54,31.2 Z" />
+
+    <!-- Rayo central neón equilibrado -->
     <path
         android:fillColor="#00E5FF"
-        android:pathData="M58,28 L41,54 L53,54 L47,78 L68,49 L55,49 Z" />
+        android:pathData="M57.5,34 L43,55 L53,55 L48.5,73 L65,50 L54.5,50 Z" />
 
-    <!-- Barra diagonal de bloqueo de anuncios -->
+    <!-- Barra diagonal de corte de anuncios -->
     <path
-        android:fillColor="#00FF9D"
-        android:pathData="M34,72 L72,34 L76,38 L38,76 Z" />
+        android:fillColor="#00E68A"
+        android:pathData="M37.5,67.5 L67.5,37.5 L70.5,40.5 L40.5,70.5 Z" />
 </vector>
