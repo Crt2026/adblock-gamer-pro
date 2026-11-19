@@ -26,7 +26,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -73,12 +75,15 @@ public class MainActivity extends Activity {
     private LinearLayout topKeyBox, btnPower, alertBanner;
     private ImageView ivTopKey, ivKey;
     private TextView tvKeyLabel, tvState, tvSubState, tvAlertText;
+    private TextView tvHeroNet, tvHeroQuic, tvHeroSni;
     private TextView tvAds, tvQueries, tvListCount, tvLast;
     private TextView tvRowPackets, tvRowDoh, tvRowQuic, tvRowDns;
 
     // Activity tab
     private final TextView[] filterPills = new TextView[3];
     private int activityFilter = 0; // 0 = todos, 1 = bloqueados, 2 = permitidos
+    private String activityQuery = "";
+    private EditText etSearch;
     private LinearLayout boxHistory;
     private TextView tvManual;
 
@@ -253,13 +258,19 @@ public class MainActivity extends Activity {
         bar.setBackgroundColor(BG_BAR);
         bar.setPadding(dp(14), dp(12), dp(14), dp(12));
 
+        LinearLayout logoWrap = new LinearLayout(this);
+        logoWrap.setGravity(Gravity.CENTER);
+        logoWrap.setBackground(roundedBg(Color.parseColor("#11223A"), Color.parseColor("#1E4E6E"), 10));
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(dp(34), dp(34));
+        llp.setMargins(0, 0, dp(10), 0);
+        logoWrap.setLayoutParams(llp);
+
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.ic_nav_shield);
         logo.setColorFilter(CYAN, PorterDuff.Mode.SRC_IN);
-        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(dp(24), dp(24));
-        llp.setMargins(0, 0, dp(10), 0);
-        logo.setLayoutParams(llp);
-        bar.addView(logo);
+        logo.setLayoutParams(new LinearLayout.LayoutParams(dp(19), dp(19)));
+        logoWrap.addView(logo);
+        bar.addView(logoWrap);
 
         LinearLayout left = new LinearLayout(this);
         left.setOrientation(LinearLayout.VERTICAL);
@@ -271,13 +282,13 @@ public class MainActivity extends Activity {
 
         TextView brand = new TextView(this);
         brand.setText("Adblock Gamer Pro");
-        brand.setTextSize(16);
+        brand.setTextSize(15);
         brand.setTypeface(null, Typeface.BOLD);
         brand.setTextColor(TEXT_PRIMARY);
         titleRow.addView(brand);
 
         TextView ver = new TextView(this);
-        ver.setText("v5.2");
+        ver.setText("v5.3");
         ver.setTextSize(10);
         ver.setTypeface(null, Typeface.BOLD);
         ver.setTextColor(CYAN);
@@ -331,14 +342,14 @@ public class MainActivity extends Activity {
     private LinearLayout buildProtectionTab() {
         LinearLayout root = tabContainer();
 
-        LinearLayout hero = cardBox(16, 16);
+        LinearLayout hero = cardBox(16, 15);
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
 
         btnPower = new LinearLayout(this);
         btnPower.setOrientation(LinearLayout.VERTICAL);
         btnPower.setGravity(Gravity.CENTER);
         btnPower.setPadding(0, 0, 0, 0);
-        int pSize = dp(136);
+        int pSize = dp(142);
         LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(pSize, pSize);
         pLp.gravity = Gravity.CENTER_HORIZONTAL;
         btnPower.setLayoutParams(pLp);
@@ -348,7 +359,7 @@ public class MainActivity extends Activity {
         ivKey.setImageResource(R.drawable.ic_key_gamer);
         ivKey.setScaleType(ImageView.ScaleType.FIT_CENTER);
         ivKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
-        LinearLayout.LayoutParams kLp = new LinearLayout.LayoutParams(dp(44), dp(44));
+        LinearLayout.LayoutParams kLp = new LinearLayout.LayoutParams(dp(42), dp(42));
         kLp.gravity = Gravity.CENTER_HORIZONTAL;
         ivKey.setLayoutParams(kLp);
         btnPower.addView(ivKey);
@@ -357,7 +368,7 @@ public class MainActivity extends Activity {
         tvKeyLabel.setText("ACTIVAR");
         tvKeyLabel.setTextSize(11);
         tvKeyLabel.setTypeface(null, Typeface.BOLD);
-        tvKeyLabel.setLetterSpacing(0.10f);
+        tvKeyLabel.setLetterSpacing(0.11f);
         tvKeyLabel.setTextColor(TEXT_PRIMARY);
         tvKeyLabel.setIncludeFontPadding(false);
         tvKeyLabel.setGravity(Gravity.CENTER);
@@ -365,11 +376,16 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tLp.gravity = Gravity.CENTER_HORIZONTAL;
-        tLp.setMargins(0, dp(5), 0, 0);
+        tLp.setMargins(0, dp(4), 0, 0);
         tvKeyLabel.setLayoutParams(tLp);
         btnPower.addView(tvKeyLabel);
 
-        btnPower.setOnClickListener(v -> toggleProtection());
+        btnPower.setOnClickListener(v -> {
+            btnPower.animate().scaleX(0.93f).scaleY(0.93f).setDuration(80)
+                    .withEndAction(() -> btnPower.animate().scaleX(1f).scaleY(1f).setDuration(110).start())
+                    .start();
+            toggleProtection();
+        });
         hero.addView(btnPower);
 
         tvState = new TextView(this);
@@ -378,7 +394,7 @@ public class MainActivity extends Activity {
         tvState.setTypeface(null, Typeface.BOLD);
         tvState.setTextColor(ROSE);
         tvState.setGravity(Gravity.CENTER);
-        tvState.setPadding(0, dp(12), 0, dp(3));
+        tvState.setPadding(0, dp(10), 0, dp(2));
         hero.addView(tvState);
 
         tvSubState = new TextView(this);
@@ -386,7 +402,21 @@ public class MainActivity extends Activity {
         tvSubState.setTextSize(12);
         tvSubState.setTextColor(TEXT_MUTED);
         tvSubState.setGravity(Gravity.CENTER);
+        tvSubState.setPadding(0, 0, 0, dp(10));
         hero.addView(tvSubState);
+
+        hero.addView(divider());
+
+        LinearLayout heroStrip = new LinearLayout(this);
+        heroStrip.setOrientation(LinearLayout.HORIZONTAL);
+        heroStrip.setWeightSum(3);
+        heroStrip.setPadding(0, dp(9), 0, 0);
+        heroStrip.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        tvHeroNet = miniTag(heroStrip, "WiFi + 4G/5G");
+        tvHeroQuic = miniTag(heroStrip, "QUIC / DoH");
+        tvHeroSni = miniTag(heroStrip, "Filtro SNI");
+        hero.addView(heroStrip);
 
         root.addView(hero);
 
@@ -434,9 +464,9 @@ public class MainActivity extends Activity {
         mlp.setMargins(0, dp(10), 0, 0);
         metrics.setLayoutParams(mlp);
 
-        tvAds = metricCard(metrics, "0", "Bloqueados", EMERALD, true);
-        tvQueries = metricCard(metrics, "0", "Consultas", CYAN, true);
-        tvListCount = metricCard(metrics, "76k", "Dominios", TEXT_PRIMARY, false);
+        tvAds = metricCard(metrics, R.drawable.ic_nav_shield, "0", "Bloqueados", EMERALD, true);
+        tvQueries = metricCard(metrics, R.drawable.ic_nav_activity, "0", "Consultas", CYAN, true);
+        tvListCount = metricCard(metrics, R.drawable.ic_perm_data, "76k", "Dominios", TEXT_PRIMARY, false);
         root.addView(metrics);
 
         LinearLayout lastCard = cardBox(15, 11);
@@ -525,6 +555,54 @@ public class MainActivity extends Activity {
         }
         styleFilterChips();
         headerCard.addView(chips);
+
+        LinearLayout searchBox = new LinearLayout(this);
+        searchBox.setOrientation(LinearLayout.HORIZONTAL);
+        searchBox.setGravity(Gravity.CENTER_VERTICAL);
+        searchBox.setBackground(roundedBg(BG_DARK, BORDER_SUBTLE, 11));
+        searchBox.setPadding(dp(10), dp(2), dp(8), dp(2));
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        slp.setMargins(0, dp(9), 0, 0);
+        searchBox.setLayoutParams(slp);
+
+        ImageView sIc = new ImageView(this);
+        sIc.setImageResource(R.drawable.ic_search_small);
+        sIc.setColorFilter(TEXT_MUTED, PorterDuff.Mode.SRC_IN);
+        LinearLayout.LayoutParams silp = new LinearLayout.LayoutParams(dp(15), dp(15));
+        silp.setMargins(0, 0, dp(8), 0);
+        sIc.setLayoutParams(silp);
+        searchBox.addView(sIc);
+
+        etSearch = new EditText(this);
+        etSearch.setHint("Buscar dominio (ej: mollyflow, emochi)...");
+        etSearch.setTextSize(12);
+        etSearch.setSingleLine(true);
+        etSearch.setBackground(null);
+        etSearch.setTextColor(TEXT_PRIMARY);
+        etSearch.setHintTextColor(Color.parseColor("#52668A"));
+        etSearch.setPadding(0, dp(7), 0, dp(7));
+        etSearch.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                activityQuery = s == null ? "" : s.toString().trim().toLowerCase();
+                renderHistory();
+            }
+        });
+        searchBox.addView(etSearch);
+
+        TextView clearBtn = new TextView(this);
+        clearBtn.setText("Limpiar");
+        clearBtn.setTextSize(10);
+        clearBtn.setTypeface(null, Typeface.BOLD);
+        clearBtn.setTextColor(TEXT_MUTED);
+        clearBtn.setPadding(dp(8), dp(5), dp(6), dp(5));
+        clearBtn.setOnClickListener(v -> etSearch.setText(""));
+        searchBox.addView(clearBtn);
+
+        headerCard.addView(searchBox);
         root.addView(headerCard);
 
         LinearLayout listCard = cardBox(12, 8);
@@ -620,15 +698,15 @@ public class MainActivity extends Activity {
 
         LinearLayout swCard = cardBox(15, 10);
         swCard.addView(cardTitle("CAPAS DE BLOQUEO AVANZADO"));
-        swCard.addView(switchRow("Inspección SNI + HTTP", "Analiza conexiones de juegos sin descifrar datos privados", 0));
+        swCard.addView(switchRow(R.drawable.ic_nav_shield, "Inspección SNI + HTTP", "Analiza conexiones de juegos sin descifrar datos privados", 0));
         swCard.addView(divider());
-        swCard.addView(switchRow("Bloquear red publicitaria de Meta", "Filtra anuncios sin afectar WhatsApp ni Instagram", 1));
+        swCard.addView(switchRow(R.drawable.ic_nav_filters, "Bloquear red publicitaria de Meta", "Filtra anuncios sin afectar WhatsApp ni Instagram", 1));
         swCard.addView(divider());
-        swCard.addView(switchRow("Cortar QUIC (UDP 443 y 8443)", "Evita que Chrome/WebView/ads esquiven el filtro TCP", 2));
+        swCard.addView(switchRow(R.drawable.ic_nav_activity, "Cortar QUIC (UDP 443 y 8443)", "Evita que Chrome/WebView/ads esquiven el filtro TCP", 2));
         swCard.addView(divider());
-        swCard.addView(switchRow("Cortar DoT / DoH evasivo", "Impide que los SDKs usen DNS privado 1.1.1.1 / 8.8.8.8", 3));
+        swCard.addView(switchRow(R.drawable.ic_perm_vpn, "Cortar DoT / DoH evasivo", "Impide que los SDKs usen DNS privado 1.1.1.1 / 8.8.8.8", 3));
         swCard.addView(divider());
-        swCard.addView(switchRow("Notificar anuncios bloqueados", "Muestra aviso en Android al cortar publicidad", 4));
+        swCard.addView(switchRow(R.drawable.ic_perm_notif, "Notificar anuncios bloqueados", "Muestra aviso en Android al cortar publicidad", 4));
         root.addView(swCard);
 
         LinearLayout listCard = cardBox(15, 13);
@@ -842,7 +920,19 @@ public class MainActivity extends Activity {
         return t;
     }
 
-    private TextView metricCard(LinearLayout parent, String val, String label, int color, boolean gapRight) {
+    private TextView miniTag(LinearLayout parent, String text) {
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(10);
+        t.setTypeface(null, Typeface.BOLD);
+        t.setTextColor(TEXT_MUTED);
+        t.setGravity(Gravity.CENTER);
+        t.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        parent.addView(t);
+        return t;
+    }
+
+    private TextView metricCard(LinearLayout parent, int iconRes, String val, String label, int color, boolean gapRight) {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
         c.setGravity(Gravity.CENTER);
@@ -860,14 +950,27 @@ public class MainActivity extends Activity {
         v.setGravity(Gravity.CENTER);
         c.addView(v);
 
+        LinearLayout labRow = new LinearLayout(this);
+        labRow.setOrientation(LinearLayout.HORIZONTAL);
+        labRow.setGravity(Gravity.CENTER);
+        labRow.setPadding(0, dp(2), 0, 0);
+
+        ImageView ic = new ImageView(this);
+        ic.setImageResource(iconRes);
+        ic.setColorFilter(TEXT_MUTED, PorterDuff.Mode.SRC_IN);
+        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(11), dp(11));
+        ilp.setMargins(0, 0, dp(4), 0);
+        ic.setLayoutParams(ilp);
+        labRow.addView(ic);
+
         TextView l = new TextView(this);
         l.setText(label);
         l.setTextSize(11);
         l.setTextColor(TEXT_MUTED);
-        l.setGravity(Gravity.CENTER);
-        l.setPadding(0, dp(1), 0, 0);
-        c.addView(l);
+        l.setIncludeFontPadding(false);
+        labRow.addView(l);
 
+        c.addView(labRow);
         parent.addView(c);
         return v;
     }
@@ -922,16 +1025,30 @@ public class MainActivity extends Activity {
         return b;
     }
 
-    private LinearLayout switchRow(String title, String desc, int which) {
+    private LinearLayout switchRow(int iconRes, String title, String desc, int which) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, dp(10), 0, dp(10));
 
+        LinearLayout iconWrap = new LinearLayout(this);
+        iconWrap.setGravity(Gravity.CENTER);
+        iconWrap.setBackground(roundedBg(Color.parseColor("#0D192E"), BORDER_SUBTLE, 9));
+        LinearLayout.LayoutParams wlp = new LinearLayout.LayoutParams(dp(30), dp(30));
+        wlp.setMargins(0, 0, dp(10), 0);
+        iconWrap.setLayoutParams(wlp);
+
+        ImageView ic = new ImageView(this);
+        ic.setImageResource(iconRes);
+        ic.setColorFilter(CYAN, PorterDuff.Mode.SRC_IN);
+        ic.setLayoutParams(new LinearLayout.LayoutParams(dp(16), dp(16)));
+        iconWrap.addView(ic);
+        row.addView(iconWrap);
+
         LinearLayout left = new LinearLayout(this);
         left.setOrientation(LinearLayout.VERTICAL);
         left.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        left.setPadding(0, 0, dp(12), 0);
+        left.setPadding(0, 0, dp(10), 0);
 
         TextView t = new TextView(this);
         t.setText(title);
@@ -1115,6 +1232,21 @@ public class MainActivity extends Activity {
 
         tvTopNet.setText(networkName());
 
+        if (tvHeroNet != null) {
+            tvHeroNet.setText(real ? "● Túnel activo" : "○ En espera");
+            tvHeroNet.setTextColor(real ? EMERALD : TEXT_MUTED);
+        }
+        if (tvHeroQuic != null) {
+            boolean q = prefs.getBoolean(Blocklist.KEY_BLOCK_QUIC, true);
+            tvHeroQuic.setText(q ? "QUIC cortado" : "QUIC libre");
+            tvHeroQuic.setTextColor(q && real ? CYAN : TEXT_MUTED);
+        }
+        if (tvHeroSni != null) {
+            boolean s = prefs.getBoolean(Blocklist.KEY_SNI_MODE, true);
+            tvHeroSni.setText(s ? "SNI activo" : "Solo DNS");
+            tvHeroSni.setTextColor(s && real ? CYAN : TEXT_MUTED);
+        }
+
         int blocked = AdBlockVpnService.DNS_BLOCKED.get() + AdBlockVpnService.SNI_BLOCKED.get();
         int queries = blocked + AdBlockVpnService.QUIC_DROPPED.get();
         int domains = Blocklist.count(this);
@@ -1153,14 +1285,21 @@ public class MainActivity extends Activity {
     }
 
     private void renderHistory() {
-        List<TrafficLog.Entry> all = TrafficLog.recent(40);
+        List<TrafficLog.Entry> all = TrafficLog.recent(50);
+        int cAll = 0, cBlk = 0, cAllow = 0;
         List<TrafficLog.Entry> list = new ArrayList<>();
         for (TrafficLog.Entry e : all) {
+            if (!activityQuery.isEmpty() && !e.domain.toLowerCase().contains(activityQuery)) continue;
+            cAll++;
+            if (e.blocked) cBlk++; else cAllow++;
             if (activityFilter == 1 && !e.blocked) continue;
             if (activityFilter == 2 && e.blocked) continue;
-            list.add(e);
-            if (list.size() >= 25) break;
+            if (list.size() < 25) list.add(e);
         }
+
+        if (filterPills[0] != null) filterPills[0].setText("Todos (" + cAll + ")");
+        if (filterPills[1] != null) filterPills[1].setText("Bloqueados (" + cBlk + ")");
+        if (filterPills[2] != null) filterPills[2].setText("Permitidos (" + cAllow + ")");
 
         boxHistory.removeAllViews();
         if (list.isEmpty()) {
@@ -1478,7 +1617,7 @@ public class MainActivity extends Activity {
                     ? new Notification.Builder(this, chId)
                     : new Notification.Builder(this);
             b.setSmallIcon(R.drawable.ic_stat_shield)
-                    .setContentTitle("Adblock Gamer Pro v5.2")
+                    .setContentTitle("Adblock Gamer Pro v5.3")
                     .setContentText("Notificaciones funcionando correctamente")
                     .setContentIntent(pi)
                     .setAutoCancel(true);
