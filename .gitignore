@@ -1,0 +1,12 @@
+# Gradle / Android build
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+
+# Versiones antiguas del APK (se conserva solo la ultima)
+BloqueoAnuncios-Juegos-v*.apk
+AdblockGamerPro-v4.0.apk

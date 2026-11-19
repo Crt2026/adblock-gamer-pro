@@ -1,0 +1,112 @@
+BLOQUEO DE ANUNCIOS PARA JUEGOS - v3.3
+======================================
+
+CAMBIOS v3.3
+------------
+- Viene configurada de fabrica con Control D + OISD (el mejor para juegos).
+  No hay que elegir nada: instalas, tocas la llave y ya esta.
+- Migracion automatica: si venias de una version anterior, al abrir la app
+  se cambia a OISD una sola vez, sin borrar tus otras preferencias.
+
+CAMBIOS v3.2
+------------
+- Nuevos proveedores en el selector: Control D + OISD (76.76.2.32 /
+  76.76.10.32), Control D + Hagezi TIF (76.76.2.46 / 76.76.10.46),
+  Control D + AdGuard (76.76.2.44) y Control D + StevenBlack (76.76.2.35).
+  Recomendado para juegos: Control D + OISD o Control D + Hagezi.
+- AdGuard (94.140.14.14 / 94.140.15.15) sigue siendo el predeterminado y
+  se aplica igual en Wi-Fi que en datos moviles: la VPN del tunel es
+  del sistema, no hace falta configurar cada red por separado.
+- Mullvad (base.dns.mullvad.net) NO se anade como proveedor: su DNS
+  publico cerró el 2/11/2026. El hostname se bloquea para que ninguna
+  app intente usarlo.
+
+CAMBIOS v3.1 (sobre v3.0)
+-------------------------
+- SELECTOR DE SERVIDOR DNS dentro de la app: AdGuard, AdGuard Familiar,
+  Control D, AhaDNS, DNS0.eu, CleanBrowsing, Alternate DNS y Cloudflare.
+  Al cambiarlo se reinicia el bloqueo automaticamente.
+- El DNS elegido se usa como upstream y tiene respaldo automatico al
+  secundario si el primario falla.
+- CORREGIDO un fallo real: las respuestas DNS no volvian al movil porque
+  se buscaban por el puerto del cliente en vez del ID de la consulta.
+  Ahora la resolucion de nombres funciona de verdad.
+- Mas hostnames DoT/DoH de proveedores anadidos a la lista de bloqueo para
+  que ninguna app esquive el filtro.
+
+NOTA: Mullvad DNS publico cerro el 2 de noviembre de 2026, por eso no
+aparece en la lista. Los hostnames que empezaban por "://" estaban
+incompletos; los equivalentes correctos ya estan integrados.
+
+======================================
+
+ARCHIVO PARA INSTALAR:
+  BloqueoAnuncios-Juegos-v3.3.apk (en el Escritorio)
+
+NOVEDADES v3.0
+--------------
+- BOTON GRANDE CON LLAVE en el centro: verde = activado, rojo = desactivado.
+- Icono nuevo con llave dorada activa y check verde.
+- Estado de permisos visible: VPN, Notificaciones, Bateria y Arranque.
+- Boton para dar permiso de bateria y que el bloqueo no se apague.
+- Un solo hilo para todo el trafico UDP (antes uno por conexion): menos
+  CPU, menos bateria y menos calor. Sin wakelocks.
+
+NOVEDADES v2.0
+--------------
+- 76.000 dominios publicitarios incluidos (antes eran ~130).
+- Inspeccion SNI activada por defecto.
+- Bloqueo de DNS privado (DoT 853 / DoH 443) para que Android no esquive
+  el filtro aunque tengas "DNS privado" activado en los ajustes.
+- El estado ACTIVA/INACTIVA ahora es real: si el VPN no esta corriendo,
+  aparece "ACTIVANDO... (acepta el permiso VPN)".
+- Pantalla con los ULTIMOS DOMINIOS BLOQUEADOS para que veas si funciona.
+
+COMO INSTALAR
+-------------
+1. Pasa el APK a tu movil (WhatsApp, cable USB, Google Drive, etc.).
+2. Abre el APK. Android te pedira activar "Instalar aplicaciones desconocidas".
+   En Android 8 o superior hay que dar permiso a la app desde la que lo abres.
+3. Instala y abre "Bloqueo Anuncios".
+4. Mueve el interruptor ACTIVAR / DESACTIVAR TODO.
+5. Android mostrara un aviso: "Conexion VPN solicitada". Pulsa ACEPTAR.
+   Ese aviso es NORMAL y obligatorio: Android solo permite bloquear trafico
+   a traves de una VPN. No envia tus datos a ningun servidor externo.
+
+COMO USARLO
+-----------
+- Interruptor principal: activa/desactiva toda la proteccion.
+- Inspeccion SNI (avanzada): bloquea ademas por el nombre del servidor en
+  conexiones TCP 443. Viene ACTIVADA. Si un juego se queda sin conexion,
+  apagala. Al cambiarla, pulsa GUARDAR Y APLICAR.
+- Servidor DNS: viene en Control D + OISD. Tambien puedes elegir AdGuard,
+  Control D + Hagezi, AhaDNS, DNS0.eu, CleanBrowsing, Alternate o Cloudflare.
+  Se aplica al instante (reinicia el bloqueo).
+- Bloquear QUIC y Bloquear DoT: impiden que los anuncios esquiven el bloqueo DNS.
+- Dominios adicionales: puedes anadir dominios que quieras bloquear.
+- Excepciones: dominios que NO se bloquean (util para anuncios con recompensa).
+
+REDES BLOQUEADAS
+----------------
+Google AdMob / DoubleClick, Meta Audience Network, AppLovin, Unity Ads,
+ironSource, Vungle / Liftoff, Pangle / ByteDance, Mintegral, Moloco,
+AdColony, Chartboost, InMobi, Fyber, PubMatic, Rubicon, OpenX, Criteo,
+y proveedores de DoH/DoT para que no eviten el filtro.
+
+IMPORTANTE - LIMITACIONES REALES
+--------------------------------
+- NINGUNA app bloquea el 100 % de los anuncios de TODOS los juegos.
+- Los anuncios con recompensa (ver un video para ganar vidas/monedas) no se
+  pueden distinguir de otros. Si se bloquean, el juego NO te da el premio.
+  Anade el dominio del anuncio a Excepciones si quieres seguir ganando premios.
+- Algunos juegos detectan bloqueadores y pueden dejar de abrir. En ese caso,
+  desactiva la inspeccion SNI o anade el juego a Excepciones.
+- Los anuncios que el juego trae metidos en su propio codigo no se pueden
+  bloquear desde una app sin root sin romper el juego.
+- El APK esta firmado con la clave de depuracion de Android. Es suficiente
+  para instalarlo, pero no es una firma de tienda oficial.
+
+NOTA SOBRE EL VIDEO
+-------------------
+No pude ver el video adjunto: esta sesion no puede mostrar imagenes ni videos.
+Si me dices el nombre del juego y el anuncio exacto, puedo afinar la lista.

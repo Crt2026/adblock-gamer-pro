@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="gamer_bg">#080B14</color>
+    <color name="gamer_card">#121A2E</color>
+    <color name="gamer_card2">#0E1526</color>
+    <color name="gamer_border">#223354</color>
+    <color name="gamer_cyan">#00E5FF</color>
+    <color name="gamer_purple">#B026FF</color>
+    <color name="gamer_green">#00FF9D</color>
+    <color name="gamer_red">#FF3B5C</color>
+    <color name="gamer_text">#E8F0FF</color>
+    <color name="gamer_muted">#8FA3C8</color>
+    <!-- compatibilidad con el tema anterior -->
+    <color name="primary">#1B2A63</color>
+    <color name="accent">#00E5FF</color>
+    <color name="bg">#080B14</color>
+    <color name="text">#E8F0FF</color>
+</resources>
