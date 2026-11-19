@@ -45,6 +45,8 @@ public final class Blocklist {
         "imasdk.googleapis.com", "fundingchoicesmessages.google.com",
         "adtrafficquality.google", "ep1.adtrafficquality.google",
         "ep2.adtrafficquality.google", "csi.gstatic.com", "app-measurement.com",
+        "adservice.google.cl", "adservice.google.es", "adservice.google.com.mx",
+        "adservice.google.com.ar", "adservice.google.com.co", "adservice.google.com.pe",
         // Meta Audience Network
         "facebook.net", "facebookads.com", "audiencenetwork.com",
         "an.facebook.com", "ads.facebook.com", "fbads.com",
@@ -64,12 +66,20 @@ public final class Blocklist {
         "vungle.com", "vungleads.com", "liftoff.io", "liftoff-creatives.io",
         // Pangle / ByteDance / TikTok Ads
         "pangle.io", "pangle-ads.com", "pangolin.com", "panglesdk.com",
-        "pangolin-sdk-toutiao.com", "pangolin-sdk-toutiao-b.com",
-        "byteadx.com", "pglstatp.com", "byteadserving.com", "byteoversea.com",
-        "tiktokads.com", "ads.tiktok.com",
-        // Mintegral / Mobvista / Rayjump
+        "pangolin-sdk-toutiao.com", "pangolin-sdk-toutiao-b.com", "pangolin-sdk-toutiao1.com",
+        "pangolin16.sgsnssdk.com", "byteadx.com", "pglstatp.com", "byteadserving.com",
+        "byteoversea.com", "ibytedtos.com", "tiktokads.com", "ads.tiktok.com",
+        // Mintegral / Mobvista / Rayjump / Mollyflow / TopOn / TradPlus
         "mintegral.com", "mintegral.net", "mintegrals.com", "mtgads.com",
-        "rayjump.com", "mobvista.com",
+        "rayjump.com", "analytics-ios.rayjump.com", "mobvista.com",
+        "mollyflow.com", "mmtk.mollyflow.com", "mmds.mollyflow.com",
+        "anythinktech.com", "toponad.com", "tradplusad.com", "tradplus.com",
+        "adtiming.com", "openmediation.com", "tappx.com",
+        // Dominios camuflados / rotativos vistos en Emochi y SDKs móviles
+        "thecatmachine.com", "x.thecatmachine.com",
+        "blueduckredapple.com", "x.blueduckredapple.com",
+        "appsflyersdk.com", "launches.appsflyersdk.com", "inapps.appsflyersdk.com",
+        "attr.appsflyersdk.com", "cdn-settings.appsflyersdk.com",
         // Bigo / BidMachine / Appodeal / HyprMX / Ogury / Start.io / Digital Turbine
         "bigo.sg", "bigoad.com", "bidmachine.io", "bm-cdn.com",
         "appodeal.com", "appodealx.com", "ogury.com", "ogury.co", "presage.io",
@@ -78,9 +88,14 @@ public final class Blocklist {
         "startapp.com", "startappservice.com", "startappexchange.com", "start.io",
         "smaato.net", "smaato.com", "verve.com", "pubnative.net",
         "kidoz.net", "superawesome.tv", "yodo1.com", "yodo1api.com",
-        // Moloco / AdColony / Chartboost / InMobi / Tapjoy / Yandex / VK
-        "moloco.com", "molocoads.com", "adcolony.com", "chartboost.com",
+        // Moloco / AdColony / Chartboost / InMobi / Tapjoy / Yandex / VK / Medición
+        "moloco.com", "molocoads.com", "adsmoloco.com", "moloco-ads.com",
+        "dsp-api.moloco.com", "sdkopmetrics-us.dsp-api.moloco.com",
+        "adcolony.com", "chartboost.com",
         "inmobi.com", "inmobicdn.net", "tapjoy.com",
+        "doubleverify.com", "adsafeprotected.com", "moatads.com", "omid.io",
+        "adx.ads.oppomobile.com", "ads.heytapmobile.com", "ads.xiaomi.com",
+        "ad.xiaomi.com", "sdkconfig.ad.xiaomi.com",
         "yandexadexchange.net", "ads.vk.com", "mytarget.ru", "ad.mail.ru",
         // Exchanges, SSP y atribución publicitaria
         "pubmatic.com", "rubiconproject.com", "openx.net",
@@ -155,11 +170,31 @@ public final class Blocklist {
             while (true) {
                 String part = h.substring(i + 1);
                 if (customAllow.contains(part)) return false;
+                i = h.indexOf('.', i + 1);
+                if (i < 0 || i == h.length() - 1) break;
+            }
+            i = -1;
+            while (true) {
+                String part = h.substring(i + 1);
                 if (base.contains(part) || customBlock.contains(part)) return true;
                 i = h.indexOf('.', i + 1);
                 if (i < 0 || i == h.length() - 1) break;
             }
-            return false;
+            return matchesAdPattern(h);
+        }
+
+        private static boolean matchesAdPattern(String h) {
+            if (h.startsWith("adservice.google.")) return true;
+            return h.contains(".moloco.") || h.contains(".adsmoloco.")
+                    || h.contains(".rayjump.") || h.contains(".mintegral.")
+                    || h.contains(".mollyflow.") || h.contains(".thecatmachine.")
+                    || h.contains(".blueduckredapple.") || h.contains(".applovin.")
+                    || h.contains(".applvn.") || h.contains(".pangle.")
+                    || h.contains(".bidmachine.") || h.contains(".unityads.")
+                    || h.contains(".ironsrc.") || h.contains(".ironsource.")
+                    || h.contains(".vungle.") || h.contains(".doubleclick.")
+                    || h.contains(".googlesyndication.") || h.contains(".googleadservices.")
+                    || h.contains(".adtrafficquality.") || h.contains(".appsflyersdk.");
         }
 
         public int size() { return base.size() + customBlock.size(); }
@@ -243,6 +278,7 @@ public final class Blocklist {
             conn.setConnectTimeout(12000);
             conn.setReadTimeout(25000);
             conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "AdblockGamerPro/5.1");
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return;
             try (InputStream in = conn.getInputStream();
                  BufferedReader br = new BufferedReader(

@@ -220,7 +220,7 @@ public class AdBlockVpnService extends VpnService {
                         + " bloqueados | " + PACKETS_READ.get() + " paquetes"
                 : "Protección detenida";
         b.setSmallIcon(R.drawable.ic_stat_shield)
-                .setContentTitle("Adblock Gamer Pro v5.0")
+                .setContentTitle("Adblock Gamer Pro v5.1")
                 .setContentText(txt)
                 .setContentIntent(pi)
                 .setOngoing(active)
@@ -751,7 +751,7 @@ public class AdBlockVpnService extends VpnService {
             ENCRYPTED_CUT.incrementAndGet();
             return;
         }
-        if (blockQuic && ip.dstPort == 443) {
+        if (blockQuic && (ip.dstPort == 443 || ip.dstPort == 8443)) {
             QUIC_DROPPED.incrementAndGet();
             return;
         }
@@ -844,6 +844,10 @@ public class AdBlockVpnService extends VpnService {
             sendRst(ip);
             DOT_DROPPED.incrementAndGet();
             ENCRYPTED_CUT.incrementAndGet();
+            return;
+        }
+        if (ip.dst == 0) {
+            sendRst(ip);
             return;
         }
         if (!sniMode) return;
