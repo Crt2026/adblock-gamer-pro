@@ -241,14 +241,12 @@ public final class Blocklist {
 
     /** Descarga y combina HaGeZi Multi Pro (muy potente en juegos) + StevenBlack. */
     public static int download(Context c) {
-        String[] sources = {
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/pro.txt",
-            "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
-        };
-        Set<String> merged = new HashSet<>(220000);
-        for (String src : sources) {
-            fetchInto(src, merged);
+        Set<String> merged = new HashSet<>(260000);
+        fetchInto("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.txt", merged);
+        if (merged.size() < 120000) {
+            fetchInto("https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/pro.txt", merged);
         }
+        fetchInto("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", merged);
         if (merged.size() < 20000) return -1;
 
         File tmp = new File(c.getFilesDir(), "ad_domains_new.txt");
@@ -279,7 +277,7 @@ public final class Blocklist {
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(45000);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "AdblockGamerPro/5.3");
+            conn.setRequestProperty("User-Agent", "AdblockGamerPro/5.4");
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return;
             try (InputStream in = conn.getInputStream();
                  BufferedReader br = new BufferedReader(

@@ -1,6 +1,8 @@
 package com.bloqueador.anuncios;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -61,18 +63,22 @@ public class MainActivity extends Activity {
     private static final int EMERALD = Color.parseColor("#00E68A");
     private static final int ROSE = Color.parseColor("#FF4D6D");
     private static final int AMBER = Color.parseColor("#FFC247");
+    private static final int INDIGO = Color.parseColor("#93C5FD");
     private static final int TEXT_PRIMARY = Color.parseColor("#F1F5FF");
     private static final int TEXT_MUTED = Color.parseColor("#879BC0");
 
     private final ScrollView[] tabViews = new ScrollView[4];
     private final LinearLayout[] navItems = new LinearLayout[4];
+    private final View[] navBars = new View[4];
     private final ImageView[] navIcons = new ImageView[4];
     private final TextView[] navLabels = new TextView[4];
     private int activeTab = 0;
 
     // Header & Protection tab
     private TextView tvTopNet, tvTopKey;
-    private LinearLayout topKeyBox, btnPower, alertBanner;
+    private LinearLayout topKeyBox, btnPower, powerInnerPlate, alertBanner;
+    private View vPulseRing;
+    private ObjectAnimator pulseAnim;
     private ImageView ivTopKey, ivKey;
     private TextView tvKeyLabel, tvState, tvSubState, tvAlertText;
     private TextView tvHeroNet, tvHeroQuic, tvHeroSni;
@@ -141,18 +147,22 @@ public class MainActivity extends Activity {
     }
 
     private void autoUpdateListIfNeeded() {
-        if (Blocklist.count(this) >= 120000) return;
+        int before = Blocklist.count(this);
+        if (before >= 140000) return;
         new Thread(() -> {
             int n = Blocklist.download(getApplicationContext());
             if (n > 0) {
                 handler.post(() -> {
                     reloadRules();
                     refresh();
+                    int after = Blocklist.count(MainActivity.this);
                     if (tvRules != null) tvRules.setText(Blocklist.stats(MainActivity.this));
                     if (tvUpdateStatus != null) {
-                        tvUpdateStatus.setText("Base activa: " + String.format("%,d", Blocklist.count(MainActivity.this)) + " dominios");
+                        tvUpdateStatus.setText("Base activa: " + String.format("%,d", after) + " dominios");
                     }
-                    toast("Lista ampliada: " + String.format("%,d", n) + " dominios");
+                    if (after > before + 1000) {
+                        toast("Lista ampliada: " + String.format("%,d", after) + " dominios");
+                    }
                 });
             }
         }, "AutoUpdateList").start();
@@ -207,6 +217,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         handler.removeCallbacks(ticker);
+        if (pulseAnim != null) pulseAnim.cancel();
         super.onDestroy();
     }
 
@@ -256,19 +267,19 @@ public class MainActivity extends Activity {
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setBackgroundColor(BG_BAR);
-        bar.setPadding(dp(14), dp(12), dp(14), dp(12));
+        bar.setPadding(dp(14), dp(11), dp(14), dp(11));
 
         LinearLayout logoWrap = new LinearLayout(this);
         logoWrap.setGravity(Gravity.CENTER);
-        logoWrap.setBackground(roundedBg(Color.parseColor("#11223A"), Color.parseColor("#1E4E6E"), 10));
-        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(dp(34), dp(34));
+        logoWrap.setBackground(roundedBg(Color.parseColor("#0F233C"), Color.parseColor("#21577A"), 12));
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(dp(38), dp(38));
         llp.setMargins(0, 0, dp(10), 0);
         logoWrap.setLayoutParams(llp);
 
         ImageView logo = new ImageView(this);
-        logo.setImageResource(R.drawable.ic_nav_shield);
+        logo.setImageResource(R.drawable.ic_power_shield);
         logo.setColorFilter(CYAN, PorterDuff.Mode.SRC_IN);
-        logo.setLayoutParams(new LinearLayout.LayoutParams(dp(19), dp(19)));
+        logo.setLayoutParams(new LinearLayout.LayoutParams(dp(22), dp(22)));
         logoWrap.addView(logo);
         bar.addView(logoWrap);
 
@@ -288,7 +299,7 @@ public class MainActivity extends Activity {
         titleRow.addView(brand);
 
         TextView ver = new TextView(this);
-        ver.setText("v5.3");
+        ver.setText("v5.4");
         ver.setTextSize(10);
         ver.setTypeface(null, Typeface.BOLD);
         ver.setTextColor(CYAN);
@@ -306,6 +317,8 @@ public class MainActivity extends Activity {
         tvTopNet.setText("Comprobando red...");
         tvTopNet.setTextSize(11);
         tvTopNet.setTextColor(TEXT_MUTED);
+        tvTopNet.setSingleLine(true);
+        tvTopNet.setEllipsize(TextUtils.TruncateAt.END);
         tvTopNet.setPadding(0, dp(1), 0, 0);
         left.addView(tvTopNet);
 
@@ -345,48 +358,75 @@ public class MainActivity extends Activity {
         LinearLayout hero = cardBox(16, 15);
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
 
+        FrameLayout powerStage = new FrameLayout(this);
+        int stageSize = dp(176);
+        LinearLayout.LayoutParams stageLp = new LinearLayout.LayoutParams(stageSize, stageSize);
+        stageLp.gravity = Gravity.CENTER_HORIZONTAL;
+        powerStage.setLayoutParams(stageLp);
+
+        vPulseRing = new View(this);
+        vPulseRing.setBackground(roundedBg(Color.TRANSPARENT, Color.parseColor("#33FF4D6D"), 999));
+        FrameLayout.LayoutParams pulseLp = new FrameLayout.LayoutParams(dp(172), dp(172), Gravity.CENTER);
+        vPulseRing.setLayoutParams(pulseLp);
+        vPulseRing.setAlpha(0.35f);
+        powerStage.addView(vPulseRing);
+
         btnPower = new LinearLayout(this);
         btnPower.setOrientation(LinearLayout.VERTICAL);
         btnPower.setGravity(Gravity.CENTER);
         btnPower.setPadding(0, 0, 0, 0);
-        int pSize = dp(142);
-        LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(pSize, pSize);
-        pLp.gravity = Gravity.CENTER_HORIZONTAL;
+        int pSize = dp(158);
+        FrameLayout.LayoutParams pLp = new FrameLayout.LayoutParams(pSize, pSize, Gravity.CENTER);
         btnPower.setLayoutParams(pLp);
         btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
+
+        powerInnerPlate = new LinearLayout(this);
+        powerInnerPlate.setGravity(Gravity.CENTER);
+        powerInnerPlate.setBackground(roundedBg(Color.parseColor("#2A1524"), Color.parseColor("#6E2842"), 999));
+        LinearLayout.LayoutParams plateLp = new LinearLayout.LayoutParams(dp(64), dp(64));
+        plateLp.gravity = Gravity.CENTER_HORIZONTAL;
+        powerInnerPlate.setLayoutParams(plateLp);
 
         ivKey = new ImageView(this);
         ivKey.setImageResource(R.drawable.ic_key_gamer);
         ivKey.setScaleType(ImageView.ScaleType.FIT_CENTER);
         ivKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
-        LinearLayout.LayoutParams kLp = new LinearLayout.LayoutParams(dp(42), dp(42));
-        kLp.gravity = Gravity.CENTER_HORIZONTAL;
-        ivKey.setLayoutParams(kLp);
-        btnPower.addView(ivKey);
+        ivKey.setLayoutParams(new LinearLayout.LayoutParams(dp(34), dp(34)));
+        powerInnerPlate.addView(ivKey);
+        btnPower.addView(powerInnerPlate);
 
         tvKeyLabel = new TextView(this);
         tvKeyLabel.setText("ACTIVAR");
-        tvKeyLabel.setTextSize(11);
+        tvKeyLabel.setTextSize(10);
         tvKeyLabel.setTypeface(null, Typeface.BOLD);
         tvKeyLabel.setLetterSpacing(0.11f);
         tvKeyLabel.setTextColor(TEXT_PRIMARY);
         tvKeyLabel.setIncludeFontPadding(false);
         tvKeyLabel.setGravity(Gravity.CENTER);
         tvKeyLabel.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        tvKeyLabel.setBackground(roundedBg(Color.parseColor("#1A1328"), Color.parseColor("#54243B"), 999));
+        tvKeyLabel.setPadding(dp(11), dp(4), dp(11), dp(4));
         LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tLp.gravity = Gravity.CENTER_HORIZONTAL;
-        tLp.setMargins(0, dp(4), 0, 0);
+        tLp.setMargins(0, dp(8), 0, 0);
         tvKeyLabel.setLayoutParams(tLp);
         btnPower.addView(tvKeyLabel);
 
         btnPower.setOnClickListener(v -> {
-            btnPower.animate().scaleX(0.93f).scaleY(0.93f).setDuration(80)
-                    .withEndAction(() -> btnPower.animate().scaleX(1f).scaleY(1f).setDuration(110).start())
+            btnPower.animate().scaleX(0.92f).scaleY(0.92f).setDuration(80)
+                    .withEndAction(() -> btnPower.animate().scaleX(1f).scaleY(1f).setDuration(130).start())
                     .start();
-            toggleProtection();
+            boolean enabled = prefs.getBoolean(Blocklist.KEY_ENABLED, false);
+            boolean real = AdBlockVpnService.SERVICE_RUNNING.get();
+            if (enabled && !real && enabledAt > 0 && System.currentTimeMillis() - enabledAt > 4500) {
+                startProtection();
+            } else {
+                toggleProtection();
+            }
         });
-        hero.addView(btnPower);
+        powerStage.addView(btnPower);
+        hero.addView(powerStage);
 
         tvState = new TextView(this);
         tvState.setText("Protección desactivada");
@@ -466,7 +506,7 @@ public class MainActivity extends Activity {
 
         tvAds = metricCard(metrics, R.drawable.ic_nav_shield, "0", "Bloqueados", EMERALD, true);
         tvQueries = metricCard(metrics, R.drawable.ic_nav_activity, "0", "Consultas", CYAN, true);
-        tvListCount = metricCard(metrics, R.drawable.ic_perm_data, "76k", "Dominios", TEXT_PRIMARY, false);
+        tvListCount = metricCard(metrics, R.drawable.ic_perm_data, "76k", "Dominios", INDIGO, false);
         root.addView(metrics);
 
         LinearLayout lastCard = cardBox(15, 11);
@@ -484,13 +524,13 @@ public class MainActivity extends Activity {
 
         LinearLayout tunnelCard = cardBox(15, 11);
         tunnelCard.addView(cardTitle("ESTADO DEL TÚNEL (tun0)"));
-        tvRowPackets = kvRow(tunnelCard, "Paquetes filtrados", "0");
+        tvRowPackets = kvRowIcon(tunnelCard, R.drawable.ic_row_packets, CYAN, "Paquetes filtrados", "0");
         tunnelCard.addView(divider());
-        tvRowDoh = kvRow(tunnelCard, "DoT / DoH bloqueados", "0");
+        tvRowDoh = kvRowIcon(tunnelCard, R.drawable.ic_row_doh, EMERALD, "DoT / DoH bloqueados", "0");
         tunnelCard.addView(divider());
-        tvRowQuic = kvRow(tunnelCard, "QUIC cortados (UDP 443/8443)", "0");
+        tvRowQuic = kvRowIcon(tunnelCard, R.drawable.ic_row_quic, AMBER, "QUIC cortados (443/8443)", "0");
         tunnelCard.addView(divider());
-        tvRowDns = kvRow(tunnelCard, "Servidor DNS activo", "Control D + OISD");
+        tvRowDns = kvRowIcon(tunnelCard, R.drawable.ic_row_dns, INDIGO, "Servidor DNS", "Control D + OISD");
         root.addView(tunnelCard);
 
         LinearLayout quick = new LinearLayout(this);
@@ -501,13 +541,15 @@ public class MainActivity extends Activity {
         qlp.setMargins(0, dp(10), 0, 0);
         quick.setLayoutParams(qlp);
 
-        TextView b1 = pillButton("Actualizar listas", EMERALD, Color.parseColor("#041A11"), v -> downloadBlocklistNow());
+        LinearLayout b1 = pillIconButton(R.drawable.ic_btn_download, "Actualizar listas",
+                EMERALD, Color.parseColor("#041A11"), v -> downloadBlocklistNow());
         LinearLayout.LayoutParams b1lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         b1lp.setMargins(0, 0, dp(5), 0);
         b1.setLayoutParams(b1lp);
         quick.addView(b1);
 
-        TextView b2 = pillButton("Ver actividad", BG_SURFACE_2, TEXT_PRIMARY, v -> selectTab(1));
+        LinearLayout b2 = pillIconButton(R.drawable.ic_btn_radar, "Ver actividad",
+                BG_SURFACE_2, TEXT_PRIMARY, v -> selectTab(1));
         LinearLayout.LayoutParams b2lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         b2lp.setMargins(dp(5), 0, 0, 0);
         b2.setLayoutParams(b2lp);
@@ -680,10 +722,10 @@ public class MainActivity extends Activity {
         spProvider.setAdapter(ad);
         spBox.addView(spProvider);
 
-        TextView chevron = new TextView(this);
-        chevron.setText("▾");
-        chevron.setTextSize(14);
-        chevron.setTextColor(CYAN);
+        ImageView chevron = new ImageView(this);
+        chevron.setImageResource(R.drawable.ic_chevron_down);
+        chevron.setColorFilter(CYAN, PorterDuff.Mode.SRC_IN);
+        chevron.setLayoutParams(new LinearLayout.LayoutParams(dp(18), dp(18)));
         spBox.addView(chevron);
         dnsCard.addView(spBox);
 
@@ -807,7 +849,7 @@ public class MainActivity extends Activity {
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setWeightSum(4);
         nav.setBackgroundColor(BG_BAR);
-        nav.setPadding(dp(8), dp(7), dp(8), dp(9));
+        nav.setPadding(dp(8), dp(6), dp(8), dp(8));
 
         int[] iconRes = {
                 R.drawable.ic_nav_shield,
@@ -822,15 +864,23 @@ public class MainActivity extends Activity {
             LinearLayout item = new LinearLayout(this);
             item.setOrientation(LinearLayout.VERTICAL);
             item.setGravity(Gravity.CENTER);
-            item.setPadding(dp(4), dp(6), dp(4), dp(6));
+            item.setPadding(dp(4), dp(4), dp(4), dp(6));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             item.setLayoutParams(lp);
 
+            View bar = new View(this);
+            bar.setBackground(roundedBg(CYAN, CYAN, 999));
+            LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(dp(26), dp(3));
+            blp.gravity = Gravity.CENTER_HORIZONTAL;
+            blp.setMargins(0, 0, 0, dp(4));
+            bar.setLayoutParams(blp);
+            item.addView(bar);
+
             ImageView ic = new ImageView(this);
             ic.setImageResource(iconRes[i]);
             ic.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(20), dp(20));
+            LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(21), dp(21));
             ilp.gravity = Gravity.CENTER_HORIZONTAL;
             ic.setLayoutParams(ilp);
             item.addView(ic);
@@ -850,6 +900,7 @@ public class MainActivity extends Activity {
 
             item.setOnClickListener(v -> selectTab(idx));
             navItems[i] = item;
+            navBars[i] = bar;
             navIcons[i] = ic;
             navLabels[i] = lb;
             nav.addView(item);
@@ -863,8 +914,9 @@ public class MainActivity extends Activity {
             boolean sel = (i == index);
             tabViews[i].setVisibility(sel ? View.VISIBLE : View.GONE);
             navItems[i].setBackground(sel
-                    ? roundedBg(Color.parseColor("#13233A"), Color.parseColor("#1E4E6E"), 12)
+                    ? roundedBg(Color.parseColor("#12233C"), Color.parseColor("#1D4E6E"), 12)
                     : null);
+            navBars[i].setVisibility(sel ? View.VISIBLE : View.INVISIBLE);
             int tint = sel ? CYAN : TEXT_MUTED;
             navIcons[i].setColorFilter(tint, PorterDuff.Mode.SRC_IN);
             navLabels[i].setTextColor(tint);
@@ -937,55 +989,76 @@ public class MainActivity extends Activity {
         c.setOrientation(LinearLayout.VERTICAL);
         c.setGravity(Gravity.CENTER);
         c.setBackground(roundedBg(BG_SURFACE, BORDER_SUBTLE, 14));
-        c.setPadding(dp(8), dp(11), dp(8), dp(11));
+        c.setPadding(dp(8), dp(10), dp(8), dp(10));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         if (gapRight) lp.setMargins(0, 0, dp(8), 0);
         c.setLayoutParams(lp);
+
+        LinearLayout iconWrap = new LinearLayout(this);
+        iconWrap.setGravity(Gravity.CENTER);
+        int softBg = Color.argb(30, Color.red(color), Color.green(color), Color.blue(color));
+        int softBd = Color.argb(80, Color.red(color), Color.green(color), Color.blue(color));
+        iconWrap.setBackground(roundedBg(softBg, softBd, 8));
+        LinearLayout.LayoutParams iwp = new LinearLayout.LayoutParams(dp(26), dp(26));
+        iwp.setMargins(0, 0, 0, dp(6));
+        iconWrap.setLayoutParams(iwp);
+
+        ImageView ic = new ImageView(this);
+        ic.setImageResource(iconRes);
+        ic.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        ic.setLayoutParams(new LinearLayout.LayoutParams(dp(15), dp(15)));
+        iconWrap.addView(ic);
+        c.addView(iconWrap);
 
         TextView v = new TextView(this);
         v.setText(val);
         v.setTextSize(19);
         v.setTypeface(null, Typeface.BOLD);
-        v.setTextColor(color);
+        v.setTextColor(TEXT_PRIMARY);
         v.setGravity(Gravity.CENTER);
         c.addView(v);
-
-        LinearLayout labRow = new LinearLayout(this);
-        labRow.setOrientation(LinearLayout.HORIZONTAL);
-        labRow.setGravity(Gravity.CENTER);
-        labRow.setPadding(0, dp(2), 0, 0);
-
-        ImageView ic = new ImageView(this);
-        ic.setImageResource(iconRes);
-        ic.setColorFilter(TEXT_MUTED, PorterDuff.Mode.SRC_IN);
-        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(11), dp(11));
-        ilp.setMargins(0, 0, dp(4), 0);
-        ic.setLayoutParams(ilp);
-        labRow.addView(ic);
 
         TextView l = new TextView(this);
         l.setText(label);
         l.setTextSize(11);
         l.setTextColor(TEXT_MUTED);
+        l.setGravity(Gravity.CENTER);
         l.setIncludeFontPadding(false);
-        labRow.addView(l);
+        l.setPadding(0, dp(2), 0, 0);
+        c.addView(l);
 
-        c.addView(labRow);
         parent.addView(c);
         return v;
     }
 
-    private TextView kvRow(LinearLayout parent, String label, String value) {
+    private TextView kvRowIcon(LinearLayout parent, int iconRes, int iconTint, String label, String value) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(6), 0, dp(6));
+        row.setPadding(0, dp(7), 0, dp(7));
+
+        LinearLayout iconWrap = new LinearLayout(this);
+        iconWrap.setGravity(Gravity.CENTER);
+        iconWrap.setBackground(roundedBg(Color.parseColor("#0D192E"), BORDER_SUBTLE, 8));
+        LinearLayout.LayoutParams wlp = new LinearLayout.LayoutParams(dp(26), dp(26));
+        wlp.setMargins(0, 0, dp(9), 0);
+        iconWrap.setLayoutParams(wlp);
+
+        ImageView ic = new ImageView(this);
+        ic.setImageResource(iconRes);
+        ic.setColorFilter(iconTint, PorterDuff.Mode.SRC_IN);
+        ic.setLayoutParams(new LinearLayout.LayoutParams(dp(15), dp(15)));
+        iconWrap.addView(ic);
+        row.addView(iconWrap);
 
         TextView k = new TextView(this);
         k.setText(label);
         k.setTextSize(12);
         k.setTextColor(TEXT_MUTED);
+        k.setSingleLine(true);
+        k.setEllipsize(TextUtils.TruncateAt.END);
         k.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        k.setPadding(0, 0, dp(8), 0);
         row.addView(k);
 
         TextView v = new TextView(this);
@@ -993,6 +1066,9 @@ public class MainActivity extends Activity {
         v.setTextSize(12);
         v.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         v.setTextColor(TEXT_PRIMARY);
+        v.setSingleLine(true);
+        v.setEllipsize(TextUtils.TruncateAt.END);
+        v.setGravity(Gravity.END);
         row.addView(v);
 
         parent.addView(row);
@@ -1023,6 +1099,34 @@ public class MainActivity extends Activity {
         b.setPadding(dp(14), dp(11), dp(14), dp(11));
         b.setOnClickListener(click);
         return b;
+    }
+
+    private LinearLayout pillIconButton(int iconRes, String text, int bgColor, int textColor, View.OnClickListener click) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setGravity(Gravity.CENTER);
+        box.setBackground(roundedBg(bgColor, bgColor, 12));
+        box.setPadding(dp(12), dp(11), dp(12), dp(11));
+
+        ImageView ic = new ImageView(this);
+        ic.setImageResource(iconRes);
+        ic.setColorFilter(textColor, PorterDuff.Mode.SRC_IN);
+        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(16), dp(16));
+        ilp.setMargins(0, 0, dp(7), 0);
+        ic.setLayoutParams(ilp);
+        box.addView(ic);
+
+        TextView b = new TextView(this);
+        b.setText(text);
+        b.setTextSize(12);
+        b.setTypeface(null, Typeface.BOLD);
+        b.setTextColor(textColor);
+        b.setSingleLine(true);
+        b.setIncludeFontPadding(false);
+        box.addView(b);
+
+        box.setOnClickListener(click);
+        return box;
     }
 
     private LinearLayout switchRow(int iconRes, String title, String desc, int which) {
@@ -1187,6 +1291,29 @@ public class MainActivity extends Activity {
         tvRules.setText(Blocklist.stats(this));
     }
 
+    private void setPulseActive(boolean active, int strokeColor) {
+        if (vPulseRing == null) return;
+        vPulseRing.setBackground(roundedBg(Color.TRANSPARENT, strokeColor, 999));
+        if (active) {
+            if (pulseAnim == null) {
+                pulseAnim = ObjectAnimator.ofFloat(vPulseRing, "alpha", 0.20f, 0.88f);
+                pulseAnim.setDuration(1050);
+                pulseAnim.setRepeatMode(ValueAnimator.REVERSE);
+                pulseAnim.setRepeatCount(ValueAnimator.INFINITE);
+            }
+            if (!pulseAnim.isRunning()) pulseAnim.start();
+        } else {
+            if (pulseAnim != null && pulseAnim.isRunning()) pulseAnim.cancel();
+            vPulseRing.setAlpha(0.32f);
+        }
+    }
+
+    private String shortDnsName(String raw) {
+        if (raw == null) return "Control D";
+        int idx = raw.indexOf(" (");
+        return idx > 0 ? raw.substring(0, idx) : raw;
+    }
+
     private void refresh() {
         boolean enabled = prefs.getBoolean(Blocklist.KEY_ENABLED, false);
         boolean real = AdBlockVpnService.SERVICE_RUNNING.get();
@@ -1196,22 +1323,28 @@ public class MainActivity extends Activity {
             tvState.setTextColor(ROSE);
             tvSubState.setText("Pulsa la llave para proteger WiFi y Datos 4G/5G");
             btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
+            powerInnerPlate.setBackground(roundedBg(Color.parseColor("#2A1524"), Color.parseColor("#6E2842"), 999));
             ivKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
             tvKeyLabel.setText("ACTIVAR");
             tvKeyLabel.setTextColor(TEXT_PRIMARY);
+            tvKeyLabel.setBackground(roundedBg(Color.parseColor("#241222"), Color.parseColor("#61253B"), 999));
+            setPulseActive(false, Color.parseColor("#38FF4D6D"));
             ivTopKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
             tvTopKey.setText("SIN LLAVE");
             tvTopKey.setTextColor(ROSE);
             topKeyBox.setBackground(roundedBg(Color.parseColor("#24111B"), Color.parseColor("#5C2032"), 999));
         } else if (!real) {
             boolean timedOut = enabledAt > 0 && System.currentTimeMillis() - enabledAt > 6000;
-            tvState.setText(timedOut ? "No se pudo iniciar (reintentar)" : "Activando llave VPN...");
+            tvState.setText(timedOut ? "Toca para reintentar VPN" : "Activando llave VPN...");
             tvState.setTextColor(AMBER);
             tvSubState.setText("Acepta el permiso VPN de Android si aparece en pantalla");
-            btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
+            btnPower.setBackgroundResource(R.drawable.bg_gamer_wait);
+            powerInnerPlate.setBackground(roundedBg(Color.parseColor("#2B2111"), Color.parseColor("#73531C"), 999));
             ivKey.setColorFilter(AMBER, PorterDuff.Mode.SRC_IN);
-            tvKeyLabel.setText(timedOut ? "REINTENTAR" : "ESPERA");
+            tvKeyLabel.setText(timedOut ? "REINTENTAR" : "CONECTANDO");
             tvKeyLabel.setTextColor(AMBER);
+            tvKeyLabel.setBackground(roundedBg(Color.parseColor("#241B0E"), Color.parseColor("#664818"), 999));
+            setPulseActive(!timedOut, Color.parseColor("#55FFC247"));
             ivTopKey.setColorFilter(AMBER, PorterDuff.Mode.SRC_IN);
             tvTopKey.setText("INICIANDO");
             tvTopKey.setTextColor(AMBER);
@@ -1221,9 +1354,12 @@ public class MainActivity extends Activity {
             tvState.setTextColor(EMERALD);
             tvSubState.setText("Bloqueando publicidad en juegos y apps (WiFi + 4G/5G)");
             btnPower.setBackgroundResource(R.drawable.bg_gamer_on);
+            powerInnerPlate.setBackground(roundedBg(Color.parseColor("#0D3329"), Color.parseColor("#20785B"), 999));
             ivKey.setColorFilter(EMERALD, PorterDuff.Mode.SRC_IN);
             tvKeyLabel.setText("ACTIVA");
             tvKeyLabel.setTextColor(EMERALD);
+            tvKeyLabel.setBackground(roundedBg(Color.parseColor("#0C2B21"), Color.parseColor("#1D6B4B"), 999));
+            setPulseActive(true, Color.parseColor("#6600E68A"));
             ivTopKey.setColorFilter(EMERALD, PorterDuff.Mode.SRC_IN);
             tvTopKey.setText("LLAVE ACTIVA");
             tvTopKey.setTextColor(EMERALD);
@@ -1263,7 +1399,7 @@ public class MainActivity extends Activity {
         tvRowQuic.setText(String.valueOf(AdBlockVpnService.QUIC_DROPPED.get()));
 
         int prov = prefs.getInt(Blocklist.KEY_DNS_PROVIDER, DnsProviders.DEFAULT);
-        tvRowDns.setText(DnsProviders.get(prov).name);
+        tvRowDns.setText(shortDnsName(DnsProviders.get(prov).name));
         if (tvUpdateStatus != null) {
             tvUpdateStatus.setText("Dominios activos: " + String.format("%,d", domains)
                     + (domains >= 120000 ? " (HaGeZi Pro + StevenBlack)" : " (lista base, pulsa para ampliar)"));
@@ -1617,7 +1753,7 @@ public class MainActivity extends Activity {
                     ? new Notification.Builder(this, chId)
                     : new Notification.Builder(this);
             b.setSmallIcon(R.drawable.ic_stat_shield)
-                    .setContentTitle("Adblock Gamer Pro v5.3")
+                    .setContentTitle("Adblock Gamer Pro v5.4")
                     .setContentText("Notificaciones funcionando correctamente")
                     .setContentIntent(pi)
                     .setAutoCancel(true);
