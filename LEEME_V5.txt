@@ -1,9 +1,9 @@
-ADBLOCK GAMER PRO v5.4 - PARCHE COMPLETO
+ADBLOCK GAMER PRO v5.5 - PARCHE COMPLETO
 =========================================
 
 COMO APLICAR ESTE PARCHE EN TU CARPETA:
 1. Descomprime este ZIP encima de tu carpeta "adblock-gamer-pro" y reemplaza los archivos cuando Windows te pregunte.
-2. Incluye el nuevo icono metalico HD adaptativo (drawable-xxhdpi/xxxhdpi/ic_foreground_img.png), todos los mipmap-* PNGs, el boton circular animado de 4 capas y 19 iconos vectoriales bitono.
+2. Incluye el nuevo icono metalico HD adaptativo (drawable-xxhdpi/xxxhdpi/ic_foreground_img.png), todos los mipmap-* PNGs, el boton Power-Shield orb animado de 4 capas y 26 iconos vectoriales bitono en las 4 pestañas.
 3. Compila el APK desde PowerShell en tu carpeta:
    gradle assembleDebug --no-daemon
 4. Instala el nuevo APK (app/build/outputs/apk/debug/app-debug.apk).

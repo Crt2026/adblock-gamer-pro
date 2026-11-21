@@ -220,7 +220,7 @@ public class AdBlockVpnService extends VpnService {
                         + " bloqueados | " + PACKETS_READ.get() + " paquetes"
                 : "Protección detenida";
         b.setSmallIcon(R.drawable.ic_stat_shield)
-                .setContentTitle("Adblock Gamer Pro v5.4")
+                .setContentTitle("Adblock Gamer Pro v5.5")
                 .setContentText(txt)
                 .setContentIntent(pi)
                 .setOngoing(active)

@@ -100,7 +100,8 @@ public class MainActivity extends Activity {
     private TextView tvRules, tvUpdateStatus, tvDnsNote;
 
     // Permissions tab
-    private LinearLayout boxPerms;
+    private LinearLayout boxPerms, btnGrantPermsBox;
+    private ImageView ivGrantPerms;
     private TextView tvPermsSummary, btnGrantPerms;
 
     private SharedPreferences prefs;
@@ -299,7 +300,7 @@ public class MainActivity extends Activity {
         titleRow.addView(brand);
 
         TextView ver = new TextView(this);
-        ver.setText("v5.4");
+        ver.setText("v5.5");
         ver.setTextSize(10);
         ver.setTypeface(null, Typeface.BOLD);
         ver.setTextColor(CYAN);
@@ -359,14 +360,14 @@ public class MainActivity extends Activity {
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
 
         FrameLayout powerStage = new FrameLayout(this);
-        int stageSize = dp(176);
+        int stageSize = dp(180);
         LinearLayout.LayoutParams stageLp = new LinearLayout.LayoutParams(stageSize, stageSize);
         stageLp.gravity = Gravity.CENTER_HORIZONTAL;
         powerStage.setLayoutParams(stageLp);
 
         vPulseRing = new View(this);
         vPulseRing.setBackground(roundedBg(Color.TRANSPARENT, Color.parseColor("#33FF4D6D"), 999));
-        FrameLayout.LayoutParams pulseLp = new FrameLayout.LayoutParams(dp(172), dp(172), Gravity.CENTER);
+        FrameLayout.LayoutParams pulseLp = new FrameLayout.LayoutParams(dp(176), dp(176), Gravity.CENTER);
         vPulseRing.setLayoutParams(pulseLp);
         vPulseRing.setAlpha(0.35f);
         powerStage.addView(vPulseRing);
@@ -375,7 +376,7 @@ public class MainActivity extends Activity {
         btnPower.setOrientation(LinearLayout.VERTICAL);
         btnPower.setGravity(Gravity.CENTER);
         btnPower.setPadding(0, 0, 0, 0);
-        int pSize = dp(158);
+        int pSize = dp(160);
         FrameLayout.LayoutParams pLp = new FrameLayout.LayoutParams(pSize, pSize, Gravity.CENTER);
         btnPower.setLayoutParams(pLp);
         btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
@@ -383,15 +384,15 @@ public class MainActivity extends Activity {
         powerInnerPlate = new LinearLayout(this);
         powerInnerPlate.setGravity(Gravity.CENTER);
         powerInnerPlate.setBackground(roundedBg(Color.parseColor("#2A1524"), Color.parseColor("#6E2842"), 999));
-        LinearLayout.LayoutParams plateLp = new LinearLayout.LayoutParams(dp(64), dp(64));
+        LinearLayout.LayoutParams plateLp = new LinearLayout.LayoutParams(dp(68), dp(68));
         plateLp.gravity = Gravity.CENTER_HORIZONTAL;
         powerInnerPlate.setLayoutParams(plateLp);
 
         ivKey = new ImageView(this);
-        ivKey.setImageResource(R.drawable.ic_key_gamer);
+        ivKey.setImageResource(R.drawable.ic_power_core);
         ivKey.setScaleType(ImageView.ScaleType.FIT_CENTER);
         ivKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
-        ivKey.setLayoutParams(new LinearLayout.LayoutParams(dp(34), dp(34)));
+        ivKey.setLayoutParams(new LinearLayout.LayoutParams(dp(38), dp(38)));
         powerInnerPlate.addView(ivKey);
         btnPower.addView(powerInnerPlate);
 
@@ -510,7 +511,7 @@ public class MainActivity extends Activity {
         root.addView(metrics);
 
         LinearLayout lastCard = cardBox(15, 11);
-        lastCard.addView(cardTitle("ÚLTIMO ANUNCIO CORTADO"));
+        lastCard.addView(cardTitleIcon(R.drawable.ic_block_small, ROSE, "ÚLTIMO ANUNCIO CORTADO"));
         tvLast = new TextView(this);
         tvLast.setText("Ninguno aún — abre un juego o app");
         tvLast.setTextSize(12);
@@ -523,7 +524,7 @@ public class MainActivity extends Activity {
         root.addView(lastCard);
 
         LinearLayout tunnelCard = cardBox(15, 11);
-        tunnelCard.addView(cardTitle("ESTADO DEL TÚNEL (tun0)"));
+        tunnelCard.addView(cardTitleIcon(R.drawable.ic_nav_shield, CYAN, "ESTADO DEL TÚNEL (tun0)"));
         tvRowPackets = kvRowIcon(tunnelCard, R.drawable.ic_row_packets, CYAN, "Paquetes filtrados", "0");
         tunnelCard.addView(divider());
         tvRowDoh = kvRowIcon(tunnelCard, R.drawable.ic_row_doh, EMERALD, "DoT / DoH bloqueados", "0");
@@ -565,7 +566,7 @@ public class MainActivity extends Activity {
         LinearLayout root = tabContainer();
 
         LinearLayout headerCard = cardBox(15, 13);
-        headerCard.addView(cardTitle("TRÁFICO EN TIEMPO REAL"));
+        headerCard.addView(cardTitleIcon(R.drawable.ic_btn_radar, CYAN, "TRÁFICO EN TIEMPO REAL"));
         TextView desc = new TextView(this);
         desc.setText("Pulsa Bloquear en cualquier dominio verde si ves publicidad en un juego o app.");
         desc.setTextSize(12);
@@ -668,7 +669,7 @@ public class MainActivity extends Activity {
         tvManual.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         foot.addView(tvManual);
 
-        foot.addView(pillButton("Limpiar lista", BG_SURFACE_2, TEXT_PRIMARY, v -> {
+        foot.addView(pillIconButton(R.drawable.ic_trash, "Limpiar lista", BG_SURFACE_2, TEXT_PRIMARY, v -> {
             TrafficLog.clear();
             renderHistory();
             toast("Historial limpio");
@@ -684,7 +685,7 @@ public class MainActivity extends Activity {
         LinearLayout root = tabContainer();
 
         LinearLayout dnsCard = cardBox(15, 13);
-        dnsCard.addView(cardTitle("SERVIDOR DNS (WIFI Y DATOS 4G/5G)"));
+        dnsCard.addView(cardTitleIcon(R.drawable.ic_row_dns, CYAN, "SERVIDOR DNS (WIFI Y DATOS 4G/5G)"));
 
         LinearLayout spBox = new LinearLayout(this);
         spBox.setOrientation(LinearLayout.HORIZONTAL);
@@ -739,7 +740,7 @@ public class MainActivity extends Activity {
         root.addView(dnsCard);
 
         LinearLayout swCard = cardBox(15, 10);
-        swCard.addView(cardTitle("CAPAS DE BLOQUEO AVANZADO"));
+        swCard.addView(cardTitleIcon(R.drawable.ic_nav_filters, CYAN, "CAPAS DE BLOQUEO AVANZADO"));
         swCard.addView(switchRow(R.drawable.ic_nav_shield, "Inspección SNI + HTTP", "Analiza conexiones de juegos sin descifrar datos privados", 0));
         swCard.addView(divider());
         swCard.addView(switchRow(R.drawable.ic_nav_filters, "Bloquear red publicitaria de Meta", "Filtra anuncios sin afectar WhatsApp ni Instagram", 1));
@@ -752,18 +753,19 @@ public class MainActivity extends Activity {
         root.addView(swCard);
 
         LinearLayout listCard = cardBox(15, 13);
-        listCard.addView(cardTitle("BASE DE DOMINIOS PUBLICITARIOS"));
+        listCard.addView(cardTitleIcon(R.drawable.ic_row_packets, EMERALD, "BASE DE DOMINIOS PUBLICITARIOS"));
         tvUpdateStatus = new TextView(this);
         tvUpdateStatus.setText("HaGeZi Pro + StevenBlack (+200.000 dominios)");
         tvUpdateStatus.setTextSize(12);
         tvUpdateStatus.setTextColor(TEXT_PRIMARY);
         tvUpdateStatus.setPadding(0, dp(2), 0, dp(10));
         listCard.addView(tvUpdateStatus);
-        listCard.addView(pillButton("Actualizar listas ahora", EMERALD, Color.parseColor("#041A11"), v -> downloadBlocklistNow()));
+        listCard.addView(pillIconButton(R.drawable.ic_btn_download, "Actualizar listas ahora",
+                EMERALD, Color.parseColor("#041A11"), v -> downloadBlocklistNow()));
         root.addView(listCard);
 
         LinearLayout manualCard = cardBox(15, 13);
-        manualCard.addView(cardTitle("REGLAS MANUALES"));
+        manualCard.addView(cardTitleIcon(R.drawable.ic_save_check, CYAN, "REGLAS MANUALES"));
         manualCard.addView(fieldLabel("Dominios extra a bloquear (uno por línea)"));
         etBlock = editor("ej: mollyflow.com");
         manualCard.addView(etBlock);
@@ -772,7 +774,8 @@ public class MainActivity extends Activity {
         etAllow = editor("ej: ads.mijuego.com");
         manualCard.addView(etAllow);
         manualCard.addView(spaceV(12));
-        manualCard.addView(pillButton("Guardar y aplicar reglas", CYAN, BG_DARK, v -> saveAndApply()));
+        manualCard.addView(pillIconButton(R.drawable.ic_save_check, "Guardar y aplicar reglas",
+                CYAN, BG_DARK, v -> saveAndApply()));
 
         tvRules = new TextView(this);
         tvRules.setTextSize(11);
@@ -791,7 +794,7 @@ public class MainActivity extends Activity {
         LinearLayout root = tabContainer();
 
         LinearLayout topCard = cardBox(15, 13);
-        topCard.addView(cardTitle("PERMISOS DEL SISTEMA ANDROID"));
+        topCard.addView(cardTitleIcon(R.drawable.ic_nav_perms, EMERALD, "PERMISOS DEL SISTEMA ANDROID"));
         tvPermsSummary = new TextView(this);
         tvPermsSummary.setText("Comprobando estado...");
         tvPermsSummary.setTextSize(12);
@@ -799,23 +802,44 @@ public class MainActivity extends Activity {
         tvPermsSummary.setPadding(0, dp(2), 0, dp(10));
         topCard.addView(tvPermsSummary);
 
-        btnGrantPerms = pillButton("Conceder permisos pendientes", EMERALD, Color.parseColor("#041A11"),
-                v -> grantNextMissingPermission());
-        topCard.addView(btnGrantPerms);
+        btnGrantPermsBox = new LinearLayout(this);
+        btnGrantPermsBox.setOrientation(LinearLayout.HORIZONTAL);
+        btnGrantPermsBox.setGravity(Gravity.CENTER);
+        btnGrantPermsBox.setBackground(roundedBg(EMERALD, EMERALD, 12));
+        btnGrantPermsBox.setPadding(dp(14), dp(11), dp(14), dp(11));
+
+        ivGrantPerms = new ImageView(this);
+        ivGrantPerms.setImageResource(R.drawable.ic_check_small);
+        ivGrantPerms.setColorFilter(Color.parseColor("#041A11"), PorterDuff.Mode.SRC_IN);
+        LinearLayout.LayoutParams gip = new LinearLayout.LayoutParams(dp(16), dp(16));
+        gip.setMargins(0, 0, dp(7), 0);
+        ivGrantPerms.setLayoutParams(gip);
+        btnGrantPermsBox.addView(ivGrantPerms);
+
+        btnGrantPerms = new TextView(this);
+        btnGrantPerms.setText("Conceder permisos pendientes");
+        btnGrantPerms.setTextSize(13);
+        btnGrantPerms.setTypeface(null, Typeface.BOLD);
+        btnGrantPerms.setTextColor(Color.parseColor("#041A11"));
+        btnGrantPerms.setIncludeFontPadding(false);
+        btnGrantPermsBox.addView(btnGrantPerms);
+        btnGrantPermsBox.setOnClickListener(v -> grantNextMissingPermission());
+        topCard.addView(btnGrantPermsBox);
+
         topCard.addView(spaceV(8));
-        topCard.addView(pillButton("Enviar notificación de prueba", BG_SURFACE_2, TEXT_PRIMARY,
-                v -> sendTestNotification()));
+        topCard.addView(pillIconButton(R.drawable.ic_perm_notif, "Enviar notificación de prueba",
+                BG_SURFACE_2, TEXT_PRIMARY, v -> sendTestNotification()));
         root.addView(topCard);
 
         LinearLayout listCard = cardBox(15, 12);
-        listCard.addView(cardTitle("ESTADO DETALLADO"));
+        listCard.addView(cardTitleIcon(R.drawable.ic_perm_vpn, CYAN, "ESTADO DETALLADO"));
         boxPerms = new LinearLayout(this);
         boxPerms.setOrientation(LinearLayout.VERTICAL);
         listCard.addView(boxPerms);
         root.addView(listCard);
 
         LinearLayout cacheCard = cardBox(15, 13);
-        cacheCard.addView(cardTitle("LIMPIAR CACHÉ DE ANUNCIOS EN JUEGOS"));
+        cacheCard.addView(cardTitleIcon(R.drawable.ic_settings_gear, CYAN, "LIMPIAR CACHÉ DE ANUNCIOS EN JUEGOS"));
         TextView info = new TextView(this);
         info.setText("Si un juego o app ya había descargado publicidad antes de activar el filtro, fuérzale el cierre y borra su caché.");
         info.setTextSize(12);
@@ -823,20 +847,21 @@ public class MainActivity extends Activity {
         info.setPadding(0, dp(2), 0, dp(10));
         cacheCard.addView(info);
 
-        cacheCard.addView(pillButton("Abrir aplicaciones (forzar cierre / caché)", CYAN, BG_DARK, v -> {
+        cacheCard.addView(pillIconButton(R.drawable.ic_settings_gear, "Abrir aplicaciones (forzar cierre / caché)",
+                CYAN, BG_DARK, v -> {
             try {
                 startActivity(new Intent(Settings.ACTION_APPLICATION_SETTINGS));
             } catch (Exception e) { toast("No se pudo abrir"); }
         }));
         cacheCard.addView(spaceV(8));
-        cacheCard.addView(pillButton("Abrir Google Play Services", BG_SURFACE_2, TEXT_PRIMARY,
-                v -> openPackage("com.google.android.gms")));
+        cacheCard.addView(pillIconButton(R.drawable.ic_row_dns, "Abrir Google Play Services",
+                BG_SURFACE_2, TEXT_PRIMARY, v -> openPackage("com.google.android.gms")));
         cacheCard.addView(spaceV(8));
-        cacheCard.addView(pillButton("Ajustes avanzados de esta app", BG_SURFACE_2, TEXT_PRIMARY,
-                v -> openPackage(getPackageName())));
+        cacheCard.addView(pillIconButton(R.drawable.ic_power_shield, "Ajustes avanzados de esta app",
+                BG_SURFACE_2, TEXT_PRIMARY, v -> openPackage(getPackageName())));
         cacheCard.addView(spaceV(8));
-        cacheCard.addView(pillButton("Registro de errores (diagnóstico)", Color.parseColor("#26121C"), ROSE,
-                v -> showDiagnostic()));
+        cacheCard.addView(pillIconButton(R.drawable.ic_bug_report, "Registro de errores (diagnóstico)",
+                Color.parseColor("#26121C"), ROSE, v -> showDiagnostic()));
         root.addView(cacheCard);
 
         return root;
@@ -952,15 +977,29 @@ public class MainActivity extends Activity {
         return c;
     }
 
-    private TextView cardTitle(String text) {
+    private LinearLayout cardTitleIcon(int iconRes, int iconTint, String text) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, 0, 0, dp(6));
+
+        ImageView ic = new ImageView(this);
+        ic.setImageResource(iconRes);
+        ic.setColorFilter(iconTint, PorterDuff.Mode.SRC_IN);
+        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(13), dp(13));
+        ilp.setMargins(0, 0, dp(6), 0);
+        ic.setLayoutParams(ilp);
+        row.addView(ic);
+
         TextView t = new TextView(this);
         t.setText(text);
         t.setTextSize(10);
         t.setTypeface(null, Typeface.BOLD);
         t.setLetterSpacing(0.08f);
         t.setTextColor(CYAN);
-        t.setPadding(0, 0, 0, dp(5));
-        return t;
+        t.setIncludeFontPadding(false);
+        row.addView(t);
+        return row;
     }
 
     private TextView fieldLabel(String text) {
@@ -1454,12 +1493,21 @@ public class MainActivity extends Activity {
                 row.setGravity(Gravity.CENTER_VERTICAL);
                 row.setPadding(dp(4), dp(8), dp(4), dp(8));
 
-                View dot = new View(this);
-                dot.setBackground(roundedBg(e.blocked ? ROSE : EMERALD, e.blocked ? ROSE : EMERALD, 999));
-                LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(8), dp(8));
-                dlp.setMargins(0, 0, dp(9), 0);
-                dot.setLayoutParams(dlp);
-                row.addView(dot);
+                LinearLayout badgeWrap = new LinearLayout(this);
+                badgeWrap.setGravity(Gravity.CENTER);
+                badgeWrap.setBackground(roundedBg(
+                        e.blocked ? Color.parseColor("#28121D") : Color.parseColor("#0D291E"),
+                        e.blocked ? Color.parseColor("#662238") : Color.parseColor("#1D6B4B"), 8));
+                LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(dp(24), dp(24));
+                blp.setMargins(0, 0, dp(9), 0);
+                badgeWrap.setLayoutParams(blp);
+
+                ImageView bic = new ImageView(this);
+                bic.setImageResource(e.blocked ? R.drawable.ic_block_small : R.drawable.ic_check_small);
+                bic.setColorFilter(e.blocked ? ROSE : EMERALD, PorterDuff.Mode.SRC_IN);
+                bic.setLayoutParams(new LinearLayout.LayoutParams(dp(13), dp(13)));
+                badgeWrap.addView(bic);
+                row.addView(badgeWrap);
 
                 LinearLayout mid = new LinearLayout(this);
                 mid.setOrientation(LinearLayout.VERTICAL);
@@ -1603,12 +1651,16 @@ public class MainActivity extends Activity {
             tvPermsSummary.setText("Todos los permisos de Android están concedidos y activos.");
             btnGrantPerms.setText("Todos los permisos están activos");
             btnGrantPerms.setTextColor(EMERALD);
-            btnGrantPerms.setBackground(roundedBg(Color.parseColor("#0D291E"), Color.parseColor("#1D6B4B"), 12));
+            ivGrantPerms.setImageResource(R.drawable.ic_check_small);
+            ivGrantPerms.setColorFilter(EMERALD, PorterDuff.Mode.SRC_IN);
+            btnGrantPermsBox.setBackground(roundedBg(Color.parseColor("#0D291E"), Color.parseColor("#1D6B4B"), 12));
         } else {
             tvPermsSummary.setText("Pulsa Activar en los permisos pendientes para evitar cortes.");
             btnGrantPerms.setText("Conceder " + missing + (missing == 1 ? " permiso pendiente" : " permisos pendientes"));
             btnGrantPerms.setTextColor(Color.parseColor("#041A11"));
-            btnGrantPerms.setBackground(roundedBg(EMERALD, EMERALD, 12));
+            ivGrantPerms.setImageResource(R.drawable.ic_nav_perms);
+            ivGrantPerms.setColorFilter(Color.parseColor("#041A11"), PorterDuff.Mode.SRC_IN);
+            btnGrantPermsBox.setBackground(roundedBg(EMERALD, EMERALD, 12));
         }
 
         boxPerms.removeAllViews();
@@ -1753,7 +1805,7 @@ public class MainActivity extends Activity {
                     ? new Notification.Builder(this, chId)
                     : new Notification.Builder(this);
             b.setSmallIcon(R.drawable.ic_stat_shield)
-                    .setContentTitle("Adblock Gamer Pro v5.4")
+                    .setContentTitle("Adblock Gamer Pro v5.5")
                     .setContentText("Notificaciones funcionando correctamente")
                     .setContentIntent(pi)
                     .setAutoCancel(true);
