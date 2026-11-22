@@ -277,7 +277,7 @@ public final class Blocklist {
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(45000);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "AdblockGamerPro/5.5");
+            conn.setRequestProperty("User-Agent", "AdblockGamerPro/6.0");
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return;
             try (InputStream in = conn.getInputStream();
                  BufferedReader br = new BufferedReader(

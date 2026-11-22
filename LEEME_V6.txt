@@ -1,0 +1,13 @@
+ADBLOCK GAMER PRO v6.0 - PARCHE COMPLETO
+=========================================
+
+COMO APLICAR ESTE PARCHE EN TU CARPETA:
+1. Descomprime este ZIP encima de tu carpeta "adblock-gamer-pro" y reemplaza los archivos cuando Windows te pregunte.
+2. Incluye el motor anti-desconexión v6.0 (startForeground inmediato, connect TCP asíncrono en pool de 8 hilos, NetworkCallback seguro sin cortar conexiones activas y auto-reconexión con RestartReceiver), el nuevo botón Cyber-Reactor con anillo orbital HUD de 5 capas, el paquete unificado de 29 iconos vectoriales bitono 2026 y todos los mipmap-* PNGs adaptativos.
+3. Compila el APK desde PowerShell en tu carpeta:
+   gradle assembleDebug --no-daemon
+4. Instala el nuevo APK (app/build/outputs/apk/debug/app-debug.apk).
+5. IMPORTANTE en el móvil (especialmente Xiaomi / HyperOS / MIUI):
+   - Abre la pestaña Permisos y concede "Batería sin restricciones".
+   - Activa Adblock Gamer Pro y espera a que amplíe la lista (+200.000 dominios HaGeZi Pro + StevenBlack).
+   - Cierra por completo los juegos y apps que ya tenías abiertos (fuerza detención o borra caché) para que no muestren anuncios cacheados.

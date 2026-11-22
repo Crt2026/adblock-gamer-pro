@@ -2,25 +2,31 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="oval">
-            <solid android:color="#16FF4D6D" />
+            <solid android:color="#18FF4D6D" />
         </shape>
     </item>
-    <item android:top="5dp" android:bottom="5dp" android:left="5dp" android:right="5dp">
+    <item android:top="4dp" android:bottom="4dp" android:left="4dp" android:right="4dp">
         <shape android:shape="oval">
-            <solid android:color="#161426" />
-            <stroke android:width="1.5dp" android:color="#3D5C2032" />
+            <solid android:color="#191326" />
+            <stroke android:width="1.5dp" android:color="#4D7A2844" />
         </shape>
     </item>
-    <item android:top="10dp" android:bottom="10dp" android:left="10dp" android:right="10dp">
+    <item android:top="9dp" android:bottom="9dp" android:left="9dp" android:right="9dp">
         <shape android:shape="oval">
-            <gradient android:startColor="#231426" android:endColor="#0F1728" android:angle="135" />
+            <gradient android:startColor="#2C152B" android:centerColor="#181629" android:endColor="#0D1424" android:angle="135" />
             <stroke android:width="3dp" android:color="#FF4D6D" />
         </shape>
     </item>
-    <item android:top="16dp" android:bottom="16dp" android:left="16dp" android:right="16dp">
+    <item android:top="14dp" android:bottom="14dp" android:left="14dp" android:right="14dp">
         <shape android:shape="oval">
             <solid android:color="#00000000" />
-            <stroke android:width="1dp" android:color="#28FF4D6D" />
+            <stroke android:width="1dp" android:color="#28FFFFFF" />
+        </shape>
+    </item>
+    <item android:top="18dp" android:bottom="18dp" android:left="18dp" android:right="18dp">
+        <shape android:shape="oval">
+            <solid android:color="#00000000" />
+            <stroke android:width="1dp" android:color="#30FF4D6D" />
         </shape>
     </item>
 </layer-list>

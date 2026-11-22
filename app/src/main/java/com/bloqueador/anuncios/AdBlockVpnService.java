@@ -1,5 +1,6 @@
 package com.bloqueador.anuncios;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -15,6 +16,7 @@ import android.net.NetworkRequest;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemClock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -29,11 +31,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-/** Servicio VPN v5.0: WiFi + Datos Móviles, bloqueo DNS/SNI, sello IPv6 y DoT/DoH. */
+/** Servicio VPN v6.0: anti-desconexión, WiFi + Datos Móviles, bloqueo DNS/SNI, sello IPv6 y DoT/DoH. */
 public class AdBlockVpnService extends VpnService {
 
     public static final String ACTION_START = "com.bloqueador.anuncios.START";
@@ -105,22 +109,32 @@ public class AdBlockVpnService extends VpnService {
     private FileOutputStream output;
     private final Object outLock = new Object();
     private volatile boolean running = false;
+    private volatile boolean starting = false;
+    private volatile boolean userStopped = false;
     private volatile long lastAlertAt = 0;
     private Thread readerThread;
     private ConnectivityManager cm;
     private ConnectivityManager.NetworkCallback netCallback;
     private volatile long activeNetHandle = -1;
+    private volatile int lastNotifBlocked = -1;
+    private volatile int lastNotifPackets = -1;
     private final android.os.Handler notifHandler =
             new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable notifTicker = new Runnable() {
         @Override public void run() {
             if (!running) return;
-            try {
-                NotificationManager nm =
-                        (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-                if (nm != null) nm.notify(NOTIF_ID, notification(true));
-            } catch (Exception ignored) {}
-            notifHandler.postDelayed(this, 2000);
+            int blk = DNS_BLOCKED.get() + SNI_BLOCKED.get();
+            int pkt = PACKETS_READ.get();
+            if (blk != lastNotifBlocked || pkt != lastNotifPackets) {
+                lastNotifBlocked = blk;
+                lastNotifPackets = pkt;
+                try {
+                    NotificationManager nm =
+                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null) nm.notify(NOTIF_ID, notification(true));
+                } catch (Exception ignored) {}
+            }
+            notifHandler.postDelayed(this, 4000);
         }
     };
 
@@ -131,7 +145,9 @@ public class AdBlockVpnService extends VpnService {
     private final AtomicInteger udpMisses = new AtomicInteger(0);
     private volatile DatagramSocket dnsUpstream;
     private Thread dnsReaderThread;
+    private final ExecutorService controlExecutor = Executors.newSingleThreadExecutor();
     private ExecutorService dnsExecutor;
+    private ExecutorService connectExecutor;
 
     private Blocklist.RuleSet rules;
     private boolean sniMode;
@@ -171,17 +187,49 @@ public class AdBlockVpnService extends VpnService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
         if (ACTION_STOP.equals(action)) {
-            stopVpn();
+            userStopped = true;
+            getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE)
+                    .edit().putBoolean(Blocklist.KEY_ENABLED, false).apply();
+            stopVpn(true);
             return START_NOT_STICKY;
         }
         if (ACTION_RELOAD.equals(action)) {
-            rules = Blocklist.load(this);
-            SharedPreferences p = getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE);
-            notifyBlocks = p.getBoolean(Blocklist.KEY_NOTIFY_BLOCKS, true);
+            controlExecutor.execute(() -> {
+                rules = Blocklist.load(AdBlockVpnService.this);
+                SharedPreferences p = getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE);
+                notifyBlocks = p.getBoolean(Blocklist.KEY_NOTIFY_BLOCKS, true);
+            });
             return START_STICKY;
         }
-        startVpn();
+
+        SharedPreferences p = getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE);
+        if (intent == null) {
+            if (!p.getBoolean(Blocklist.KEY_ENABLED, false) || VpnService.prepare(this) != null) {
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+        }
+
+        userStopped = false;
+        enterForeground(running);
+        if (!running && !starting) {
+            starting = true;
+            controlExecutor.execute(this::startVpnWorker);
+        }
         return START_STICKY;
+    }
+
+    private void enterForeground(boolean active) {
+        try {
+            Notification n = notification(active);
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else {
+                startForeground(NOTIF_ID, n);
+            }
+        } catch (Exception e) {
+            CrashLogger.log(this, e);
+        }
     }
 
     private void createChannel() {
@@ -218,12 +266,12 @@ public class AdBlockVpnService extends VpnService {
         String txt = active
                 ? "LLAVE VPN ACTIVA · " + (DNS_BLOCKED.get() + SNI_BLOCKED.get())
                         + " bloqueados | " + PACKETS_READ.get() + " paquetes"
-                : "Protección detenida";
+                : "Conectando túnel de protección...";
         b.setSmallIcon(R.drawable.ic_stat_shield)
-                .setContentTitle("Adblock Gamer Pro v5.5")
+                .setContentTitle("Adblock Gamer Pro v6.0")
                 .setContentText(txt)
                 .setContentIntent(pi)
-                .setOngoing(active)
+                .setOngoing(true)
                 .setOnlyAlertOnce(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             b.setCategory(Notification.CATEGORY_SERVICE)
@@ -232,25 +280,32 @@ public class AdBlockVpnService extends VpnService {
         return b.build();
     }
 
-    private void startVpn() {
-        if (running) return;
+    private void startVpnWorker() {
+        if (running) {
+            starting = false;
+            return;
+        }
         SharedPreferences p = getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE);
-        rules = Blocklist.load(this);
-        sniMode = p.getBoolean(Blocklist.KEY_SNI_MODE, true);
-        blockQuic = p.getBoolean(Blocklist.KEY_BLOCK_QUIC, true);
-        blockDot = p.getBoolean(Blocklist.KEY_BLOCK_DOT, true);
-        metaBlock = p.getBoolean(Blocklist.KEY_META_BLOCK, true);
-        notifyBlocks = p.getBoolean(Blocklist.KEY_NOTIFY_BLOCKS, true);
-        DnsProviders.Provider prov = DnsProviders.get(
-                p.getInt(Blocklist.KEY_DNS_PROVIDER, DnsProviders.DEFAULT));
-        upstreamPrimary = prov.primary;
-        upstreamSecondary = prov.secondary.isEmpty() ? prov.primary : prov.secondary;
-        upstreamDotHost = prov.dotHost == null ? "" : prov.dotHost;
-        useSecondary = false;
-        useEncryptedDns = false;
-        udpMisses.set(0);
-
         try {
+            if (VpnService.prepare(this) != null) {
+                throw new IOException("Permiso VPN no concedido");
+            }
+            rules = Blocklist.load(this);
+            sniMode = p.getBoolean(Blocklist.KEY_SNI_MODE, true);
+            blockQuic = p.getBoolean(Blocklist.KEY_BLOCK_QUIC, true);
+            blockDot = p.getBoolean(Blocklist.KEY_BLOCK_DOT, true);
+            metaBlock = p.getBoolean(Blocklist.KEY_META_BLOCK, true);
+            notifyBlocks = p.getBoolean(Blocklist.KEY_NOTIFY_BLOCKS, true);
+            DnsProviders.Provider prov = DnsProviders.get(
+                    p.getInt(Blocklist.KEY_DNS_PROVIDER, DnsProviders.DEFAULT));
+            upstreamPrimary = prov.primary;
+            upstreamSecondary = prov.secondary.isEmpty() ? prov.primary : prov.secondary;
+            upstreamDotHost = prov.dotHost == null ? "" : prov.dotHost;
+            useSecondary = false;
+            useEncryptedDns = false;
+            udpMisses.set(0);
+            activeNetHandle = -1L;
+
             VpnService.Builder builder = new VpnService.Builder()
                     .setSession(getString(R.string.app_name))
                     .addAddress(CLIENT_IP, 24)
@@ -285,24 +340,25 @@ public class AdBlockVpnService extends VpnService {
             input = new FileInputStream(vpnFd.getFileDescriptor());
             output = new FileOutputStream(vpnFd.getFileDescriptor());
             running = true;
+            starting = false;
             SERVICE_RUNNING.set(true);
+            p.edit().putBoolean(Blocklist.KEY_ENABLED, true).apply();
 
-            if (Build.VERSION.SDK_INT >= 34) {
-                startForeground(NOTIF_ID, notification(true),
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
-            } else {
-                startForeground(NOTIF_ID, notification(true));
-            }
+            lastNotifBlocked = -1;
+            lastNotifPackets = -1;
+            enterForeground(true);
 
             dnsExecutor = Executors.newFixedThreadPool(6);
+            connectExecutor = Executors.newFixedThreadPool(8);
             initDnsUpstream();
             registerNetworkWatcher();
             notifHandler.post(notifTicker);
             readerThread = new Thread(this::readLoop, "VpnReader");
             readerThread.start();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             CrashLogger.log(this, e);
             running = false;
+            starting = false;
             SERVICE_RUNNING.set(false);
             p.edit().putBoolean(Blocklist.KEY_ENABLED, false).apply();
             stopForeground(true);
@@ -316,13 +372,10 @@ public class AdBlockVpnService extends VpnService {
             if (cm == null) return;
             netCallback = new ConnectivityManager.NetworkCallback() {
                 @Override public void onAvailable(Network network) {
-                    onPhysicalNetworkChanged(network);
-                }
-                @Override public void onCapabilitiesChanged(Network network, NetworkCapabilities caps) {
-                    onPhysicalNetworkChanged(network);
+                    onPhysicalNetworkAvailable(network);
                 }
                 @Override public void onLost(Network network) {
-                    onPhysicalNetworkChanged(null);
+                    onPhysicalNetworkLost(network);
                 }
             };
             NetworkRequest req = new NetworkRequest.Builder()
@@ -333,24 +386,33 @@ public class AdBlockVpnService extends VpnService {
         } catch (Exception ignored) {}
     }
 
-    private void onPhysicalNetworkChanged(Network network) {
-        if (!running) return;
-        long h = network != null ? network.getNetworkHandle() : -1L;
-        if (h != -1L && h == activeNetHandle) return;
+    private void onPhysicalNetworkAvailable(Network network) {
+        if (!running || network == null) return;
+        long h = network.getNetworkHandle();
+        if (h == activeNetHandle) return;
+        boolean hadPrevious = activeNetHandle != -1L;
         activeNetHandle = h;
-        try { setUnderlyingNetworks(null); } catch (Exception ignored) {}
-        rebindDnsUpstream();
-        for (TcpConn c : tcpMap.values()) c.close();
-        tcpMap.clear();
-        for (UdpFlow u : udpFlows.values()) u.close();
-        udpFlows.clear();
-        useSecondary = false;
-        useEncryptedDns = false;
-        udpMisses.set(0);
+        if (hadPrevious) {
+            try { setUnderlyingNetworks(null); } catch (Exception ignored) {}
+            rebindDnsUpstream();
+            useSecondary = false;
+            useEncryptedDns = false;
+            udpMisses.set(0);
+        }
     }
 
-    private void stopVpn() {
+    private void onPhysicalNetworkLost(Network network) {
+        if (!running || network == null) return;
+        if (network.getNetworkHandle() == activeNetHandle) {
+            activeNetHandle = -1L;
+            try { setUnderlyingNetworks(null); } catch (Exception ignored) {}
+            rebindDnsUpstream();
+        }
+    }
+
+    private void stopVpn(boolean stopService) {
         running = false;
+        starting = false;
         SERVICE_RUNNING.set(false);
         notifHandler.removeCallbacks(notifTicker);
         if (cm != null && netCallback != null) {
@@ -359,6 +421,8 @@ public class AdBlockVpnService extends VpnService {
         }
         try { if (input != null) input.close(); } catch (Exception ignored) {}
         try { if (output != null) output.close(); } catch (Exception ignored) {}
+        input = null;
+        output = null;
         for (TcpConn c : tcpMap.values()) c.close();
         tcpMap.clear();
         for (UdpFlow u : udpFlows.values()) u.close();
@@ -370,16 +434,63 @@ public class AdBlockVpnService extends VpnService {
             dnsExecutor.shutdownNow();
             dnsExecutor = null;
         }
+        if (connectExecutor != null) {
+            connectExecutor.shutdownNow();
+            connectExecutor = null;
+        }
         try { if (vpnFd != null) vpnFd.close(); } catch (Exception ignored) {}
         vpnFd = null;
-        stopForeground(true);
-        stopSelf();
+        if (stopService) {
+            stopForeground(true);
+            stopSelf();
+        }
+    }
+
+    private void scheduleRestart(long delayMs) {
+        try {
+            Intent i = new Intent(this, RestartReceiver.class);
+            int fl = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) fl |= PendingIntent.FLAG_IMMUTABLE;
+            PendingIntent pi = PendingIntent.getBroadcast(this, 77, i, fl);
+            AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            if (am != null) {
+                long triggerAt = SystemClock.elapsedRealtime() + delayMs;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    am.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pi);
+                } else {
+                    am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pi);
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onRevoke() {
+        userStopped = true;
+        getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE)
+                .edit().putBoolean(Blocklist.KEY_ENABLED, false).apply();
+        stopVpn(true);
+        super.onRevoke();
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        SharedPreferences p = getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE);
+        if (!userStopped && p.getBoolean(Blocklist.KEY_ENABLED, false)
+                && VpnService.prepare(this) == null) {
+            scheduleRestart(1500);
+        }
+        super.onTaskRemoved(rootIntent);
     }
 
     @Override
     public void onDestroy() {
-        running = false;
-        SERVICE_RUNNING.set(false);
+        boolean shouldKeep = !userStopped
+                && getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE)
+                        .getBoolean(Blocklist.KEY_ENABLED, false)
+                && VpnService.prepare(this) == null;
+        stopVpn(false);
+        if (shouldKeep) scheduleRestart(2000);
         super.onDestroy();
     }
 
@@ -430,7 +541,9 @@ public class AdBlockVpnService extends VpnService {
         byte[] buf = new byte[8192];
         while (running) {
             try {
-                int n = input.read(buf);
+                FileInputStream in = input;
+                if (in == null) break;
+                int n = in.read(buf);
                 if (n < 0) break;
                 if (n < 20) continue;
                 PACKETS_READ.incrementAndGet();
@@ -445,11 +558,19 @@ public class AdBlockVpnService extends VpnService {
                 if (ip == null) continue;
                 if (ip.proto == PacketUtils.PROTO_UDP) handleUdp(ip, p);
                 else if (ip.proto == PacketUtils.PROTO_TCP) handleTcp(ip, p);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 if (!running) break;
+                CrashLogger.log(this, e);
             }
         }
-        if (running) stopVpn();
+        if (running) {
+            boolean recover = !userStopped
+                    && getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE)
+                            .getBoolean(Blocklist.KEY_ENABLED, false)
+                    && VpnService.prepare(this) == null;
+            stopVpn(true);
+            if (recover) scheduleRestart(1200);
+        }
     }
 
     // ---------------- DNS ----------------
@@ -761,6 +882,13 @@ public class AdBlockVpnService extends VpnService {
         String flowKey = ip.src + ":" + ip.srcPort;
         UdpFlow flow = udpFlows.get(flowKey);
         if (flow == null || !flow.alive) {
+            if (udpFlows.size() > 140) {
+                for (Map.Entry<String, UdpFlow> entry : udpFlows.entrySet()) {
+                    entry.getValue().close();
+                    udpFlows.remove(entry.getKey());
+                    if (udpFlows.size() <= 96) break;
+                }
+            }
             flow = new UdpFlow(flowKey, ip.src, ip.srcPort);
             if (!flow.open()) return;
             udpFlows.put(flowKey, flow);
@@ -910,10 +1038,12 @@ public class AdBlockVpnService extends VpnService {
         final long clientIsn, serverIsn;
         long expectedClientSeq;
         long serverSent = 0;
-        volatile int state = 0; // 0 = esperando ClientHello completo, 1 = conectado
+        volatile int state = 0; // 0 = ClientHello, 1 = conectando async, 2 = conectado
         volatile boolean alive = true;
+        volatile boolean finPending = false;
         Socket socket;
         ByteArrayOutputStream helloBuf = new ByteArrayOutputStream(2048);
+        final Queue<byte[]> pendingWrites = new ArrayDeque<>();
 
         TcpConn(PacketUtils.Ip4 ip, String key) {
             this.key = key;
@@ -938,7 +1068,15 @@ public class AdBlockVpnService extends VpnService {
                     (int) expectedClientSeq, PacketUtils.FLAG_ACK, null, 0));
         }
 
+        void sendRstFromServer() {
+            writeOut(PacketUtils.tcp(serverIp, clientIp, serverPort, clientPort,
+                    (int) ((serverIsn + 1 + serverSent) & 0xFFFFFFFFL),
+                    (int) expectedClientSeq,
+                    PacketUtils.FLAG_RST | PacketUtils.FLAG_ACK, null, 0));
+        }
+
         synchronized void handle(PacketUtils.Ip4 ip, byte[] p) {
+            if (!alive) return;
             if ((ip.flags & PacketUtils.FLAG_RST) != 0) {
                 close();
                 tcpMap.remove(key);
@@ -980,36 +1118,55 @@ public class AdBlockVpnService extends VpnService {
                         logBlock(host);
                         if (notifyBlocks) notifyBlocked(host);
                         SNI_BLOCKED.incrementAndGet();
-                        writeOut(PacketUtils.tcp(serverIp, clientIp, serverPort, clientPort,
-                                (int) ((serverIsn + 1) & 0xFFFFFFFFL), (int) expectedClientSeq,
-                                PacketUtils.FLAG_RST | PacketUtils.FLAG_ACK, null, 0));
+                        sendRstFromServer();
                         close();
                         tcpMap.remove(key);
                         return;
                     }
                 }
 
-                try {
-                    socket = new Socket();
-                    protect(socket);
-                    socket.connect(new InetSocketAddress(
-                            PacketUtils.ipToString(serverIp), serverPort), 8000);
-                    socket.setTcpNoDelay(true);
-                    state = 1;
-                    socket.getOutputStream().write(hb);
-                    helloBuf = null;
-                    startReader();
-                } catch (Exception e) {
-                    writeOut(PacketUtils.tcp(serverIp, clientIp, serverPort, clientPort,
-                            (int) ((serverIsn + 1) & 0xFFFFFFFFL), (int) expectedClientSeq,
-                            PacketUtils.FLAG_RST | PacketUtils.FLAG_ACK, null, 0));
+                state = 1;
+                helloBuf = null;
+                pendingWrites.add(hb);
+                if ((ip.flags & PacketUtils.FLAG_FIN) != 0) {
+                    expectedClientSeq = (expectedClientSeq + 1) & 0xFFFFFFFFL;
+                    finPending = true;
+                    sendAck();
+                }
+
+                ExecutorService ex = connectExecutor;
+                if (ex == null || ex.isShutdown()) {
+                    sendRstFromServer();
                     close();
                     tcpMap.remove(key);
+                    return;
                 }
+                ex.execute(this::connectAsync);
                 return;
             }
 
             if (state == 1) {
+                if (len > 0) {
+                    if (seq == expectedClientSeq) {
+                        expectedClientSeq = (seq + len) & 0xFFFFFFFFL;
+                        sendAck();
+                        if (pendingWrites.size() < 64) {
+                            pendingWrites.add(Arrays.copyOfRange(p, ip.payloadOffset, ip.payloadOffset + len));
+                        }
+                    } else {
+                        sendAck();
+                        return;
+                    }
+                }
+                if ((ip.flags & PacketUtils.FLAG_FIN) != 0) {
+                    expectedClientSeq = (expectedClientSeq + 1) & 0xFFFFFFFFL;
+                    finPending = true;
+                    sendAck();
+                }
+                return;
+            }
+
+            if (state == 2) {
                 if (len > 0) {
                     long end = (seq + len) & 0xFFFFFFFFL;
                     if (seq == expectedClientSeq) {
@@ -1025,7 +1182,6 @@ public class AdBlockVpnService extends VpnService {
                             return;
                         }
                     } else {
-                        // Retransmision o paquete repetido: re-ACKeamos esperado.
                         sendAck();
                         return;
                     }
@@ -1035,6 +1191,40 @@ public class AdBlockVpnService extends VpnService {
                     try { if (socket != null) socket.shutdownOutput(); } catch (Exception ignored) {}
                     sendAck();
                 }
+            }
+        }
+
+        private void connectAsync() {
+            Socket s = null;
+            try {
+                s = new Socket();
+                protect(s);
+                s.connect(new InetSocketAddress(
+                        PacketUtils.ipToString(serverIp), serverPort), 6000);
+                s.setTcpNoDelay(true);
+                s.setSoTimeout(90000);
+                OutputStream os = s.getOutputStream();
+                synchronized (TcpConn.this) {
+                    if (!alive || !running) {
+                        try { s.close(); } catch (Exception ignored) {}
+                        return;
+                    }
+                    socket = s;
+                    while (!pendingWrites.isEmpty()) {
+                        os.write(pendingWrites.poll());
+                    }
+                    os.flush();
+                    state = 2;
+                    if (finPending) {
+                        try { s.shutdownOutput(); } catch (Exception ignored) {}
+                    }
+                }
+                startReader();
+            } catch (Exception e) {
+                if (s != null) try { s.close(); } catch (Exception ignored) {}
+                sendRstFromServer();
+                close();
+                tcpMap.remove(key);
             }
         }
 
@@ -1065,10 +1255,7 @@ public class AdBlockVpnService extends VpnService {
                         }
                     } catch (Exception e) {
                         if (!alive) break;
-                        writeOut(PacketUtils.tcp(serverIp, clientIp, serverPort, clientPort,
-                                (int) ((serverIsn + 1 + serverSent) & 0xFFFFFFFFL),
-                                (int) expectedClientSeq,
-                                PacketUtils.FLAG_RST | PacketUtils.FLAG_ACK, null, 0));
+                        sendRstFromServer();
                         break;
                     }
                 }
@@ -1077,8 +1264,9 @@ public class AdBlockVpnService extends VpnService {
             }, "TcpRelay").start();
         }
 
-        void close() {
+        synchronized void close() {
             alive = false;
+            pendingWrites.clear();
             if (socket != null) try { socket.close(); } catch (Exception ignored) {}
         }
     }

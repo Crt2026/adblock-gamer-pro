@@ -34,6 +34,7 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.LinearInterpolator;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -78,8 +79,8 @@ public class MainActivity extends Activity {
     private TextView tvTopNet, tvTopKey;
     private LinearLayout topKeyBox, btnPower, powerInnerPlate, alertBanner;
     private View vPulseRing;
-    private ObjectAnimator pulseAnim;
-    private ImageView ivTopKey, ivKey;
+    private ObjectAnimator pulseAnim, orbitAnim;
+    private ImageView ivTopKey, ivKey, ivOrbitalRing;
     private TextView tvKeyLabel, tvState, tvSubState, tvAlertText;
     private TextView tvHeroNet, tvHeroQuic, tvHeroSni;
     private TextView tvAds, tvQueries, tvListCount, tvLast;
@@ -108,6 +109,7 @@ public class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean loadingPrefs = false;
     private long enabledAt = 0;
+    private long lastAutoStartAt = 0;
 
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
@@ -137,6 +139,7 @@ public class MainActivity extends Activity {
             setContentView(buildUi());
             loadPrefs();
             selectTab(0);
+            autoEnsureVpn();
             refresh();
             requestNotifications();
             autoUpdateListIfNeeded();
@@ -213,13 +216,32 @@ public class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        autoEnsureVpn();
         refresh();
     }
 
     @Override protected void onDestroy() {
         handler.removeCallbacks(ticker);
         if (pulseAnim != null) pulseAnim.cancel();
+        if (orbitAnim != null) orbitAnim.cancel();
         super.onDestroy();
+    }
+
+    private void autoEnsureVpn() {
+        if (prefs == null) return;
+        boolean enabled = prefs.getBoolean(Blocklist.KEY_ENABLED, false);
+        boolean real = AdBlockVpnService.SERVICE_RUNNING.get();
+        if (!enabled || real) return;
+        if (VpnService.prepare(this) != null) {
+            prefs.edit().putBoolean(Blocklist.KEY_ENABLED, false).apply();
+            enabledAt = 0;
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastAutoStartAt < 3500) return;
+        lastAutoStartAt = now;
+        enabledAt = now;
+        sendServiceAction(AdBlockVpnService.ACTION_START);
     }
 
     // ---------------------------------------------------------------- UI ROOT
@@ -272,15 +294,15 @@ public class MainActivity extends Activity {
 
         LinearLayout logoWrap = new LinearLayout(this);
         logoWrap.setGravity(Gravity.CENTER);
-        logoWrap.setBackground(roundedBg(Color.parseColor("#0F233C"), Color.parseColor("#21577A"), 12));
-        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(dp(38), dp(38));
+        logoWrap.setBackground(roundedBg(Color.parseColor("#0F233C"), Color.parseColor("#235D85"), 13));
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(dp(40), dp(40));
         llp.setMargins(0, 0, dp(10), 0);
         logoWrap.setLayoutParams(llp);
 
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.ic_power_shield);
         logo.setColorFilter(CYAN, PorterDuff.Mode.SRC_IN);
-        logo.setLayoutParams(new LinearLayout.LayoutParams(dp(22), dp(22)));
+        logo.setLayoutParams(new LinearLayout.LayoutParams(dp(23), dp(23)));
         logoWrap.addView(logo);
         bar.addView(logoWrap);
 
@@ -300,12 +322,12 @@ public class MainActivity extends Activity {
         titleRow.addView(brand);
 
         TextView ver = new TextView(this);
-        ver.setText("v5.5");
+        ver.setText("v6.0");
         ver.setTextSize(10);
         ver.setTypeface(null, Typeface.BOLD);
         ver.setTextColor(CYAN);
-        ver.setBackground(roundedBg(Color.parseColor("#11233A"), Color.parseColor("#1D4E6E"), 999));
-        ver.setPadding(dp(6), dp(2), dp(6), dp(2));
+        ver.setBackground(roundedBg(Color.parseColor("#10263F"), Color.parseColor("#226087"), 999));
+        ver.setPadding(dp(7), dp(2), dp(7), dp(2));
         LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         vlp.setMargins(dp(7), 0, 0, 0);
@@ -320,7 +342,7 @@ public class MainActivity extends Activity {
         tvTopNet.setTextColor(TEXT_MUTED);
         tvTopNet.setSingleLine(true);
         tvTopNet.setEllipsize(TextUtils.TruncateAt.END);
-        tvTopNet.setPadding(0, dp(1), 0, 0);
+        tvTopNet.setPadding(0, dp(2), 0, 0);
         left.addView(tvTopNet);
 
         bar.addView(left);
@@ -329,12 +351,12 @@ public class MainActivity extends Activity {
         topKeyBox.setOrientation(LinearLayout.HORIZONTAL);
         topKeyBox.setGravity(Gravity.CENTER_VERTICAL);
         topKeyBox.setBackground(roundedBg(Color.parseColor("#24111B"), Color.parseColor("#5C2032"), 999));
-        topKeyBox.setPadding(dp(9), dp(5), dp(10), dp(5));
+        topKeyBox.setPadding(dp(10), dp(6), dp(11), dp(6));
 
         ivTopKey = new ImageView(this);
         ivTopKey.setImageResource(R.drawable.ic_key_gamer);
         ivTopKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
-        LinearLayout.LayoutParams iklp = new LinearLayout.LayoutParams(dp(13), dp(13));
+        LinearLayout.LayoutParams iklp = new LinearLayout.LayoutParams(dp(14), dp(14));
         iklp.setMargins(0, 0, dp(5), 0);
         ivTopKey.setLayoutParams(iklp);
         topKeyBox.addView(ivTopKey);
@@ -346,6 +368,9 @@ public class MainActivity extends Activity {
         tvTopKey.setTextColor(ROSE);
         tvTopKey.setIncludeFontPadding(false);
         topKeyBox.addView(tvTopKey);
+        topKeyBox.setOnClickListener(v -> {
+            if (btnPower != null) btnPower.performClick();
+        });
 
         bar.addView(topKeyBox);
         return bar;
@@ -356,27 +381,35 @@ public class MainActivity extends Activity {
     private LinearLayout buildProtectionTab() {
         LinearLayout root = tabContainer();
 
-        LinearLayout hero = cardBox(16, 15);
+        LinearLayout hero = cardBox(16, 13);
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
 
         FrameLayout powerStage = new FrameLayout(this);
-        int stageSize = dp(180);
+        int stageSize = dp(192);
         LinearLayout.LayoutParams stageLp = new LinearLayout.LayoutParams(stageSize, stageSize);
         stageLp.gravity = Gravity.CENTER_HORIZONTAL;
         powerStage.setLayoutParams(stageLp);
 
         vPulseRing = new View(this);
         vPulseRing.setBackground(roundedBg(Color.TRANSPARENT, Color.parseColor("#33FF4D6D"), 999));
-        FrameLayout.LayoutParams pulseLp = new FrameLayout.LayoutParams(dp(176), dp(176), Gravity.CENTER);
+        FrameLayout.LayoutParams pulseLp = new FrameLayout.LayoutParams(dp(186), dp(186), Gravity.CENTER);
         vPulseRing.setLayoutParams(pulseLp);
-        vPulseRing.setAlpha(0.35f);
+        vPulseRing.setAlpha(0.32f);
         powerStage.addView(vPulseRing);
+
+        ivOrbitalRing = new ImageView(this);
+        ivOrbitalRing.setImageResource(R.drawable.ic_reactor_ring);
+        ivOrbitalRing.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
+        ivOrbitalRing.setAlpha(0.45f);
+        FrameLayout.LayoutParams orbLp = new FrameLayout.LayoutParams(dp(176), dp(176), Gravity.CENTER);
+        ivOrbitalRing.setLayoutParams(orbLp);
+        powerStage.addView(ivOrbitalRing);
 
         btnPower = new LinearLayout(this);
         btnPower.setOrientation(LinearLayout.VERTICAL);
         btnPower.setGravity(Gravity.CENTER);
         btnPower.setPadding(0, 0, 0, 0);
-        int pSize = dp(160);
+        int pSize = dp(152);
         FrameLayout.LayoutParams pLp = new FrameLayout.LayoutParams(pSize, pSize, Gravity.CENTER);
         btnPower.setLayoutParams(pLp);
         btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
@@ -398,7 +431,7 @@ public class MainActivity extends Activity {
 
         tvKeyLabel = new TextView(this);
         tvKeyLabel.setText("ACTIVAR");
-        tvKeyLabel.setTextSize(10);
+        tvKeyLabel.setTextSize(9.5f);
         tvKeyLabel.setTypeface(null, Typeface.BOLD);
         tvKeyLabel.setLetterSpacing(0.11f);
         tvKeyLabel.setTextColor(TEXT_PRIMARY);
@@ -410,17 +443,17 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams tLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tLp.gravity = Gravity.CENTER_HORIZONTAL;
-        tLp.setMargins(0, dp(8), 0, 0);
+        tLp.setMargins(0, dp(7), 0, 0);
         tvKeyLabel.setLayoutParams(tLp);
         btnPower.addView(tvKeyLabel);
 
         btnPower.setOnClickListener(v -> {
             btnPower.animate().scaleX(0.92f).scaleY(0.92f).setDuration(80)
-                    .withEndAction(() -> btnPower.animate().scaleX(1f).scaleY(1f).setDuration(130).start())
+                    .withEndAction(() -> btnPower.animate().scaleX(1f).scaleY(1f).setDuration(140).start())
                     .start();
             boolean enabled = prefs.getBoolean(Blocklist.KEY_ENABLED, false);
             boolean real = AdBlockVpnService.SERVICE_RUNNING.get();
-            if (enabled && !real && enabledAt > 0 && System.currentTimeMillis() - enabledAt > 4500) {
+            if (enabled && !real && (enabledAt == 0 || System.currentTimeMillis() - enabledAt > 4000)) {
                 startProtection();
             } else {
                 toggleProtection();
@@ -435,15 +468,15 @@ public class MainActivity extends Activity {
         tvState.setTypeface(null, Typeface.BOLD);
         tvState.setTextColor(ROSE);
         tvState.setGravity(Gravity.CENTER);
-        tvState.setPadding(0, dp(10), 0, dp(2));
+        tvState.setPadding(0, dp(8), 0, dp(2));
         hero.addView(tvState);
 
         tvSubState = new TextView(this);
-        tvSubState.setText("Pulsa la llave para proteger WiFi y Datos 4G/5G");
+        tvSubState.setText("Pulsa el reactor para proteger WiFi y Datos 4G/5G");
         tvSubState.setTextSize(12);
         tvSubState.setTextColor(TEXT_MUTED);
         tvSubState.setGravity(Gravity.CENTER);
-        tvSubState.setPadding(0, 0, 0, dp(10));
+        tvSubState.setPadding(0, 0, 0, dp(9));
         hero.addView(tvSubState);
 
         hero.addView(divider());
@@ -451,7 +484,7 @@ public class MainActivity extends Activity {
         LinearLayout heroStrip = new LinearLayout(this);
         heroStrip.setOrientation(LinearLayout.HORIZONTAL);
         heroStrip.setWeightSum(3);
-        heroStrip.setPadding(0, dp(9), 0, 0);
+        heroStrip.setPadding(0, dp(8), 0, 0);
         heroStrip.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         tvHeroNet = miniTag(heroStrip, "WiFi + 4G/5G");
@@ -465,10 +498,10 @@ public class MainActivity extends Activity {
         alertBanner.setOrientation(LinearLayout.HORIZONTAL);
         alertBanner.setGravity(Gravity.CENTER_VERTICAL);
         alertBanner.setBackground(roundedBg(Color.parseColor("#241B0E"), Color.parseColor("#664818"), 14));
-        alertBanner.setPadding(dp(12), dp(10), dp(12), dp(10));
+        alertBanner.setPadding(dp(12), dp(9), dp(12), dp(9));
         LinearLayout.LayoutParams abLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        abLp.setMargins(0, dp(10), 0, 0);
+        abLp.setMargins(0, dp(9), 0, 0);
         alertBanner.setLayoutParams(abLp);
 
         ImageView alertIc = new ImageView(this);
@@ -502,15 +535,15 @@ public class MainActivity extends Activity {
         metrics.setWeightSum(3);
         LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        mlp.setMargins(0, dp(10), 0, 0);
+        mlp.setMargins(0, dp(9), 0, 0);
         metrics.setLayoutParams(mlp);
 
-        tvAds = metricCard(metrics, R.drawable.ic_nav_shield, "0", "Bloqueados", EMERALD, true);
-        tvQueries = metricCard(metrics, R.drawable.ic_nav_activity, "0", "Consultas", CYAN, true);
-        tvListCount = metricCard(metrics, R.drawable.ic_perm_data, "76k", "Dominios", INDIGO, false);
+        tvAds = metricCard(metrics, R.drawable.ic_nav_shield, "0", "Bloqueados", EMERALD, true, v -> selectTab(1));
+        tvQueries = metricCard(metrics, R.drawable.ic_nav_activity, "0", "Consultas", CYAN, true, v -> selectTab(1));
+        tvListCount = metricCard(metrics, R.drawable.ic_perm_data, "76k", "Dominios", INDIGO, false, v -> selectTab(2));
         root.addView(metrics);
 
-        LinearLayout lastCard = cardBox(15, 11);
+        LinearLayout lastCard = cardBox(15, 10);
         lastCard.addView(cardTitleIcon(R.drawable.ic_block_small, ROSE, "ÚLTIMO ANUNCIO CORTADO"));
         tvLast = new TextView(this);
         tvLast.setText("Ninguno aún — abre un juego o app");
@@ -523,7 +556,7 @@ public class MainActivity extends Activity {
         lastCard.addView(tvLast);
         root.addView(lastCard);
 
-        LinearLayout tunnelCard = cardBox(15, 11);
+        LinearLayout tunnelCard = cardBox(15, 10);
         tunnelCard.addView(cardTitleIcon(R.drawable.ic_nav_shield, CYAN, "ESTADO DEL TÚNEL (tun0)"));
         tvRowPackets = kvRowIcon(tunnelCard, R.drawable.ic_row_packets, CYAN, "Paquetes filtrados", "0");
         tunnelCard.addView(divider());
@@ -1023,29 +1056,30 @@ public class MainActivity extends Activity {
         return t;
     }
 
-    private TextView metricCard(LinearLayout parent, int iconRes, String val, String label, int color, boolean gapRight) {
+    private TextView metricCard(LinearLayout parent, int iconRes, String val, String label, int color, boolean gapRight, View.OnClickListener onClick) {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
         c.setGravity(Gravity.CENTER);
         c.setBackground(roundedBg(BG_SURFACE, BORDER_SUBTLE, 14));
-        c.setPadding(dp(8), dp(10), dp(8), dp(10));
+        c.setPadding(dp(8), dp(9), dp(8), dp(9));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         if (gapRight) lp.setMargins(0, 0, dp(8), 0);
         c.setLayoutParams(lp);
+        if (onClick != null) c.setOnClickListener(onClick);
 
         LinearLayout iconWrap = new LinearLayout(this);
         iconWrap.setGravity(Gravity.CENTER);
-        int softBg = Color.argb(30, Color.red(color), Color.green(color), Color.blue(color));
-        int softBd = Color.argb(80, Color.red(color), Color.green(color), Color.blue(color));
-        iconWrap.setBackground(roundedBg(softBg, softBd, 8));
-        LinearLayout.LayoutParams iwp = new LinearLayout.LayoutParams(dp(26), dp(26));
-        iwp.setMargins(0, 0, 0, dp(6));
+        int softBg = Color.argb(34, Color.red(color), Color.green(color), Color.blue(color));
+        int softBd = Color.argb(90, Color.red(color), Color.green(color), Color.blue(color));
+        iconWrap.setBackground(roundedBg(softBg, softBd, 9));
+        LinearLayout.LayoutParams iwp = new LinearLayout.LayoutParams(dp(28), dp(28));
+        iwp.setMargins(0, 0, 0, dp(5));
         iconWrap.setLayoutParams(iwp);
 
         ImageView ic = new ImageView(this);
         ic.setImageResource(iconRes);
         ic.setColorFilter(color, PorterDuff.Mode.SRC_IN);
-        ic.setLayoutParams(new LinearLayout.LayoutParams(dp(15), dp(15)));
+        ic.setLayoutParams(new LinearLayout.LayoutParams(dp(16), dp(16)));
         iconWrap.addView(ic);
         c.addView(iconWrap);
 
@@ -1074,7 +1108,7 @@ public class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(7), 0, dp(7));
+        row.setPadding(0, dp(6), 0, dp(6));
 
         LinearLayout iconWrap = new LinearLayout(this);
         iconWrap.setGravity(Gravity.CENTER);
@@ -1330,20 +1364,39 @@ public class MainActivity extends Activity {
         tvRules.setText(Blocklist.stats(this));
     }
 
-    private void setPulseActive(boolean active, int strokeColor) {
-        if (vPulseRing == null) return;
-        vPulseRing.setBackground(roundedBg(Color.TRANSPARENT, strokeColor, 999));
-        if (active) {
-            if (pulseAnim == null) {
-                pulseAnim = ObjectAnimator.ofFloat(vPulseRing, "alpha", 0.20f, 0.88f);
-                pulseAnim.setDuration(1050);
-                pulseAnim.setRepeatMode(ValueAnimator.REVERSE);
-                pulseAnim.setRepeatCount(ValueAnimator.INFINITE);
+    private void setReactorEffects(boolean pulse, long orbitDurationMs, int accentColor) {
+        if (vPulseRing != null) {
+            vPulseRing.setBackground(roundedBg(Color.TRANSPARENT, accentColor, 999));
+            if (pulse) {
+                if (pulseAnim == null) {
+                    pulseAnim = ObjectAnimator.ofFloat(vPulseRing, "alpha", 0.18f, 0.88f);
+                    pulseAnim.setDuration(1050);
+                    pulseAnim.setRepeatMode(ValueAnimator.REVERSE);
+                    pulseAnim.setRepeatCount(ValueAnimator.INFINITE);
+                }
+                if (!pulseAnim.isRunning()) pulseAnim.start();
+            } else {
+                if (pulseAnim != null && pulseAnim.isRunning()) pulseAnim.cancel();
+                vPulseRing.setAlpha(0.28f);
             }
-            if (!pulseAnim.isRunning()) pulseAnim.start();
-        } else {
-            if (pulseAnim != null && pulseAnim.isRunning()) pulseAnim.cancel();
-            vPulseRing.setAlpha(0.32f);
+        }
+        if (ivOrbitalRing != null) {
+            ivOrbitalRing.setColorFilter(accentColor, PorterDuff.Mode.SRC_IN);
+            if (orbitDurationMs > 0) {
+                ivOrbitalRing.setAlpha(0.90f);
+                if (orbitAnim == null) {
+                    orbitAnim = ObjectAnimator.ofFloat(ivOrbitalRing, "rotation", 0f, 360f);
+                    orbitAnim.setInterpolator(new LinearInterpolator());
+                    orbitAnim.setRepeatCount(ValueAnimator.INFINITE);
+                }
+                if (orbitAnim.getDuration() != orbitDurationMs) {
+                    orbitAnim.setDuration(orbitDurationMs);
+                }
+                if (!orbitAnim.isRunning()) orbitAnim.start();
+            } else {
+                if (orbitAnim != null && orbitAnim.isRunning()) orbitAnim.cancel();
+                ivOrbitalRing.setAlpha(0.35f);
+            }
         }
     }
 
@@ -1360,32 +1413,35 @@ public class MainActivity extends Activity {
         if (!enabled) {
             tvState.setText("Protección desactivada");
             tvState.setTextColor(ROSE);
-            tvSubState.setText("Pulsa la llave para proteger WiFi y Datos 4G/5G");
+            tvSubState.setText("Pulsa el reactor para proteger WiFi y Datos 4G/5G");
             btnPower.setBackgroundResource(R.drawable.bg_gamer_off);
             powerInnerPlate.setBackground(roundedBg(Color.parseColor("#2A1524"), Color.parseColor("#6E2842"), 999));
             ivKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
             tvKeyLabel.setText("ACTIVAR");
             tvKeyLabel.setTextColor(TEXT_PRIMARY);
             tvKeyLabel.setBackground(roundedBg(Color.parseColor("#241222"), Color.parseColor("#61253B"), 999));
-            setPulseActive(false, Color.parseColor("#38FF4D6D"));
+            setReactorEffects(false, 0, ROSE);
             ivTopKey.setColorFilter(ROSE, PorterDuff.Mode.SRC_IN);
             tvTopKey.setText("SIN LLAVE");
             tvTopKey.setTextColor(ROSE);
             topKeyBox.setBackground(roundedBg(Color.parseColor("#24111B"), Color.parseColor("#5C2032"), 999));
         } else if (!real) {
-            boolean timedOut = enabledAt > 0 && System.currentTimeMillis() - enabledAt > 6000;
-            tvState.setText(timedOut ? "Toca para reintentar VPN" : "Activando llave VPN...");
+            if (enabledAt == 0) enabledAt = System.currentTimeMillis() - 7000;
+            boolean timedOut = System.currentTimeMillis() - enabledAt > 6000;
+            tvState.setText(timedOut ? "VPN desconectada · Toca para reconectar" : "Activando llave VPN...");
             tvState.setTextColor(AMBER);
-            tvSubState.setText("Acepta el permiso VPN de Android si aparece en pantalla");
+            tvSubState.setText(timedOut
+                    ? "Si Android detuvo el túnel en segundo plano, pulsa reconectar"
+                    : "Acepta el permiso VPN de Android si aparece en pantalla");
             btnPower.setBackgroundResource(R.drawable.bg_gamer_wait);
             powerInnerPlate.setBackground(roundedBg(Color.parseColor("#2B2111"), Color.parseColor("#73531C"), 999));
             ivKey.setColorFilter(AMBER, PorterDuff.Mode.SRC_IN);
-            tvKeyLabel.setText(timedOut ? "REINTENTAR" : "CONECTANDO");
+            tvKeyLabel.setText(timedOut ? "RECONECTAR" : "CONECTANDO");
             tvKeyLabel.setTextColor(AMBER);
             tvKeyLabel.setBackground(roundedBg(Color.parseColor("#241B0E"), Color.parseColor("#664818"), 999));
-            setPulseActive(!timedOut, Color.parseColor("#55FFC247"));
+            setReactorEffects(!timedOut, timedOut ? 0 : 2400, AMBER);
             ivTopKey.setColorFilter(AMBER, PorterDuff.Mode.SRC_IN);
-            tvTopKey.setText("INICIANDO");
+            tvTopKey.setText(timedOut ? "RECONECTAR" : "INICIANDO");
             tvTopKey.setTextColor(AMBER);
             topKeyBox.setBackground(roundedBg(Color.parseColor("#241B0E"), Color.parseColor("#664818"), 999));
         } else {
@@ -1398,7 +1454,7 @@ public class MainActivity extends Activity {
             tvKeyLabel.setText("ACTIVA");
             tvKeyLabel.setTextColor(EMERALD);
             tvKeyLabel.setBackground(roundedBg(Color.parseColor("#0C2B21"), Color.parseColor("#1D6B4B"), 999));
-            setPulseActive(true, Color.parseColor("#6600E68A"));
+            setReactorEffects(true, 9000, EMERALD);
             ivTopKey.setColorFilter(EMERALD, PorterDuff.Mode.SRC_IN);
             tvTopKey.setText("LLAVE ACTIVA");
             tvTopKey.setTextColor(EMERALD);
@@ -1454,8 +1510,8 @@ public class MainActivity extends Activity {
             if (cm == null) return "Sin conexión";
             NetworkInfo n = cm.getActiveNetworkInfo();
             if (n == null || !n.isConnected()) return "Sin conexión a internet";
-            if (n.getType() == ConnectivityManager.TYPE_WIFI) return "WiFi conectado · Túnel listo";
-            return "Datos móviles 4G/5G · Túnel listo";
+            if (n.getType() == ConnectivityManager.TYPE_WIFI) return "● WiFi conectado · Túnel listo";
+            return "● Datos móviles 4G/5G · Túnel listo";
         } catch (Exception e) { return "Red activa"; }
     }
 
@@ -1591,11 +1647,15 @@ public class MainActivity extends Activity {
     }
 
     private void toggleProtection() {
-        boolean on = !prefs.getBoolean(Blocklist.KEY_ENABLED, false);
-        prefs.edit().putBoolean(Blocklist.KEY_ENABLED, on).apply();
-        enabledAt = on ? System.currentTimeMillis() : 0;
-        refresh();
-        if (on) startProtection(); else stopProtection();
+        boolean currentlyEnabled = prefs.getBoolean(Blocklist.KEY_ENABLED, false);
+        if (currentlyEnabled) {
+            prefs.edit().putBoolean(Blocklist.KEY_ENABLED, false).apply();
+            enabledAt = 0;
+            stopProtection();
+            refresh();
+        } else {
+            startProtection();
+        }
     }
 
     private void startProtection() {
@@ -1805,7 +1865,7 @@ public class MainActivity extends Activity {
                     ? new Notification.Builder(this, chId)
                     : new Notification.Builder(this);
             b.setSmallIcon(R.drawable.ic_stat_shield)
-                    .setContentTitle("Adblock Gamer Pro v5.5")
+                    .setContentTitle("Adblock Gamer Pro v6.0")
                     .setContentText("Notificaciones funcionando correctamente")
                     .setContentIntent(pi)
                     .setAutoCancel(true);
