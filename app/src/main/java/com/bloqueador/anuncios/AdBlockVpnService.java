@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-/** Servicio VPN v6.0: anti-desconexión, WiFi + Datos Móviles, bloqueo DNS/SNI, sello IPv6 y DoT/DoH. */
+/** Servicio VPN v6.1: anti-desconexión, Dual-Stack WiFi + Datos Móviles, bloqueo total, DNS/SNI, sello IPv6 y DoT/DoH. */
 public class AdBlockVpnService extends VpnService {
 
     public static final String ACTION_START = "com.bloqueador.anuncios.START";
@@ -100,6 +100,7 @@ public class AdBlockVpnService extends VpnService {
     private static final String CHANNEL_ALERTS_ID = "bloqueo_alertas_channel";
     private static final int NOTIF_ID = 1001;
     private static final String DNS_IP = "10.233.233.1";
+    private static final String DNS_IP6 = "fd00:233::1";
     private static final String CLIENT_IP = "10.233.233.2";
     private static final String CLIENT_IP6 = "fd00:233::2";
     private static final int MSS = 1220;
@@ -114,7 +115,8 @@ public class AdBlockVpnService extends VpnService {
     private volatile long lastAlertAt = 0;
     private Thread readerThread;
     private ConnectivityManager cm;
-    private ConnectivityManager.NetworkCallback netCallback;
+    private final java.util.List<ConnectivityManager.NetworkCallback> netCallbacks =
+            new java.util.ArrayList<>();
     private volatile long activeNetHandle = -1;
     private volatile int lastNotifBlocked = -1;
     private volatile int lastNotifPackets = -1;
@@ -155,6 +157,7 @@ public class AdBlockVpnService extends VpnService {
     private boolean blockDot;
     private boolean metaBlock;
     private boolean notifyBlocks;
+    private boolean blockAll;
     private String upstreamPrimary = "76.76.2.32";
     private String upstreamSecondary = "76.76.10.32";
     private String upstreamDotHost = "x-oisd.freedns.controld.com";
@@ -268,7 +271,7 @@ public class AdBlockVpnService extends VpnService {
                         + " bloqueados | " + PACKETS_READ.get() + " paquetes"
                 : "Conectando túnel de protección...";
         b.setSmallIcon(R.drawable.ic_stat_shield)
-                .setContentTitle("Adblock Gamer Pro v6.0")
+                .setContentTitle("Adblock Gamer Pro v6.1")
                 .setContentText(txt)
                 .setContentIntent(pi)
                 .setOngoing(true)
@@ -290,7 +293,8 @@ public class AdBlockVpnService extends VpnService {
             if (VpnService.prepare(this) != null) {
                 throw new IOException("Permiso VPN no concedido");
             }
-            rules = Blocklist.load(this);
+            blockAll = p.getBoolean(Blocklist.KEY_BLOCK_ALL, true);
+            rules = Blocklist.load(this, blockAll);
             sniMode = p.getBoolean(Blocklist.KEY_SNI_MODE, true);
             blockQuic = p.getBoolean(Blocklist.KEY_BLOCK_QUIC, true);
             blockDot = p.getBoolean(Blocklist.KEY_BLOCK_DOT, true);
@@ -311,9 +315,11 @@ public class AdBlockVpnService extends VpnService {
                     .addAddress(CLIENT_IP, 24)
                     .addAddress(CLIENT_IP6, 64)
                     .setMtu(1280)
-                    .addDnsServer(DNS_IP);
+                    .addDnsServer(DNS_IP)
+                    .addDnsServer(DNS_IP6);
 
-            // Sella fugas IPv6 capturando todo ::/0 dentro de tun0.
+            // Dual-Stack: dirección y ruta IPv6 dentro de tun0 para sellar fugas.
+            // El DNS IPv4 es el primario filtrado; el IPv6 es registro secundario.
             builder.addRoute("::", 0);
 
             if (sniMode) {
@@ -370,19 +376,33 @@ public class AdBlockVpnService extends VpnService {
         try {
             cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             if (cm == null) return;
-            netCallback = new ConnectivityManager.NetworkCallback() {
-                @Override public void onAvailable(Network network) {
-                    onPhysicalNetworkAvailable(network);
-                }
-                @Override public void onLost(Network network) {
-                    onPhysicalNetworkLost(network);
-                }
-            };
-            NetworkRequest req = new NetworkRequest.Builder()
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-                    .build();
-            cm.registerNetworkCallback(req, netCallback);
+            int scope = getSharedPreferences(Blocklist.PREFS, MODE_PRIVATE)
+                    .getInt(Blocklist.KEY_NETWORK_SCOPE, 0);
+            int[] transports = scope == 1
+                    ? new int[] { NetworkCapabilities.TRANSPORT_WIFI }
+                    : scope == 2
+                    ? new int[] { NetworkCapabilities.TRANSPORT_CELLULAR }
+                    : new int[] { NetworkCapabilities.TRANSPORT_WIFI,
+                            NetworkCapabilities.TRANSPORT_CELLULAR };
+            for (int transport : transports) {
+                ConnectivityManager.NetworkCallback cb = new ConnectivityManager.NetworkCallback() {
+                    @Override public void onAvailable(Network network) {
+                        onPhysicalNetworkAvailable(network);
+                    }
+                    @Override public void onLost(Network network) {
+                        onPhysicalNetworkLost(network);
+                    }
+                };
+                NetworkRequest req = new NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                        .addTransportType(transport)
+                        .build();
+                try {
+                    cm.registerNetworkCallback(req, cb);
+                    netCallbacks.add(cb);
+                } catch (Exception ignored) {}
+            }
         } catch (Exception ignored) {}
     }
 
@@ -415,10 +435,12 @@ public class AdBlockVpnService extends VpnService {
         starting = false;
         SERVICE_RUNNING.set(false);
         notifHandler.removeCallbacks(notifTicker);
-        if (cm != null && netCallback != null) {
-            try { cm.unregisterNetworkCallback(netCallback); } catch (Exception ignored) {}
-            netCallback = null;
+        if (cm != null) {
+            for (ConnectivityManager.NetworkCallback cb : netCallbacks) {
+                try { cm.unregisterNetworkCallback(cb); } catch (Exception ignored) {}
+            }
         }
+        netCallbacks.clear();
         try { if (input != null) input.close(); } catch (Exception ignored) {}
         try { if (output != null) output.close(); } catch (Exception ignored) {}
         input = null;

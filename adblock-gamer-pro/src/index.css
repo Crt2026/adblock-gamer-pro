@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@layer base {
+  html,
+  body {
+    background-color: #080D17;
+    color: #F1F5FF;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  }
+
+  code,
+  pre,
+  .font-mono {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #080D17;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #18243E;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #213254;
+  }
+}
+
+@keyframes reactorPulseRing {
+  0% {
+    opacity: 0.18;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes reactorOrbitSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-reactor-pulse-ring {
+  animation: reactorPulseRing 2.1s ease-in-out infinite;
+}
+
+.animate-reactor-orbit-spin {
+  animation: reactorOrbitSpin 9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-reactor-pulse-ring,
+  .animate-reactor-orbit-spin {
+    animation: none;
+  }
+}

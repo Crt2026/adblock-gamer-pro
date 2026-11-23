@@ -34,6 +34,8 @@ public final class Blocklist {
     public static final String KEY_DNS_MIGRATED_32 = "dns_migrated_32";
     public static final String KEY_META_BLOCK = "meta_block";
     public static final String KEY_NOTIFY_BLOCKS = "notify_blocks";
+    public static final String KEY_BLOCK_ALL = "block_all";
+    public static final String KEY_NETWORK_SCOPE = "network_scope";
     public static final String KEY_BLOCKLIST_VERSION = "blocklist_version";
 
     private static final String[] BUILTIN = {
@@ -124,6 +126,28 @@ public final class Blocklist {
         "x-adguard.freedns.controld.com", "x-stevenblack.freedns.controld.com"
     };
 
+    /** v6.1 - "Bloqueo total de anuncios (de todo)": juegos, video/YouTube, popups,
+     *  banners, píxeles, telemetría y SDKs de publicidad que se añaden a la lista base. */
+    private static final String[] TOTAL_BLOCK_DOMAINS = {
+        "ads.youtube.com", "ad.youtube.com", "ad.doubleclick.net", "static.doubleclick.net",
+        "s0.2mdn.net", "tpc.googlesyndication.com", "securepubads.g.doubleclick.net",
+        "pubmatic.com", "openx.net", "rubiconproject.com", "adnxs.com", "casalemedia.com",
+        "criteo.com", "criteo.net", "taboola.com", "outbrain.com", "adcolony.com",
+        "chartboost.com", "inmobi.com", "inmobicdn.net", "mopub.com", "flurry.com",
+        "scorecardresearch.com", "moatads.com", "doubleverify.com",
+        "analytics.tiktok.com", "pixel.facebook.com", "ads-api.twitter.com",
+        "ads.pinterest.com", "adjust.com", "app.adjust.com", "branch.io",
+        "app.appsflyer.com", "appsflyersdk.com", "kochava.com", "singular.net",
+        "banner.adcomplicated.com", "popads.net", "popunder.adcomplicated.com",
+        "adservice.google.com", "pagead2.googlesyndication.com"
+    };
+
+    /** Tokens de "bloqueo total" que complementan la lista de dominios. */
+    private static final String[] TOTAL_BLOCK_KEYWORDS = {
+        "banner", "popunder", "popup", "video-ads", "videoad", "adserver",
+        "pixel", "telemetry", "tracker", "tracking", "beacon", "sponsor"
+    };
+
     private static volatile Set<String> ASSET_SET;
 
     private static Set<String> assetSet(Context c) {
@@ -156,11 +180,13 @@ public final class Blocklist {
         private final Set<String> base;
         private final Set<String> customBlock;
         private final Set<String> customAllow;
+        private final boolean blockAll;
 
-        RuleSet(Set<String> base, Set<String> cb, Set<String> ca) {
+        RuleSet(Set<String> base, Set<String> cb, Set<String> ca, boolean blockAll) {
             this.base = base;
             this.customBlock = cb;
             this.customAllow = ca;
+            this.blockAll = blockAll;
         }
 
         public boolean isBlocked(String host) {
@@ -180,7 +206,17 @@ public final class Blocklist {
                 i = h.indexOf('.', i + 1);
                 if (i < 0 || i == h.length() - 1) break;
             }
-            return matchesAdPattern(h);
+            return matchesAdPattern(h) || (blockAll && matchesTotalPattern(h));
+        }
+
+        /** v6.1: patrones adicionales del modo "Bloqueo total de anuncios (de todo)". */
+        private static boolean matchesTotalPattern(String h) {
+            for (String kw : TOTAL_BLOCK_KEYWORDS) {
+                if (h.equals(kw) || h.startsWith(kw + ".") || h.contains("." + kw + ".")) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static boolean matchesAdPattern(String h) {
@@ -202,9 +238,18 @@ public final class Blocklist {
     }
 
     public static RuleSet load(Context c) {
+        return load(c, c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_BLOCK_ALL, true));
+    }
+
+    public static RuleSet load(Context c, boolean blockAll) {
         SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        return new RuleSet(assetSet(c), parse(p.getString(KEY_CUSTOM_BLOCK, "")),
-                parse(p.getString(KEY_CUSTOM_ALLOW, "")));
+        Set<String> base = new HashSet<>(assetSet(c));
+        if (blockAll) {
+            for (String d : TOTAL_BLOCK_DOMAINS) base.add(norm(d));
+        }
+        return new RuleSet(base, parse(p.getString(KEY_CUSTOM_BLOCK, "")),
+                parse(p.getString(KEY_CUSTOM_ALLOW, "")), blockAll);
     }
 
     private static Set<String> parse(String raw) {
@@ -277,7 +322,7 @@ public final class Blocklist {
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(45000);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "AdblockGamerPro/6.0");
+            conn.setRequestProperty("User-Agent", "AdblockGamerPro/6.1");
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return;
             try (InputStream in = conn.getInputStream();
                  BufferedReader br = new BufferedReader(

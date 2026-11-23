@@ -95,7 +95,8 @@ public class MainActivity extends Activity {
     private TextView tvManual;
 
     // Filters tab
-    private Switch swSni, swQuic, swDot, swMeta, swNotify;
+    private Switch swBlockAll, swSni, swQuic, swDot, swMeta, swNotify;
+    private Spinner spScope;
     private Spinner spProvider;
     private EditText etBlock, etAllow;
     private TextView tvRules, tvUpdateStatus, tvDnsNote;
@@ -322,7 +323,7 @@ public class MainActivity extends Activity {
         titleRow.addView(brand);
 
         TextView ver = new TextView(this);
-        ver.setText("v6.0");
+        ver.setText("v6.1");
         ver.setTextSize(10);
         ver.setTypeface(null, Typeface.BOLD);
         ver.setTextColor(CYAN);
@@ -717,6 +718,44 @@ public class MainActivity extends Activity {
     private LinearLayout buildFiltersTab() {
         LinearLayout root = tabContainer();
 
+        LinearLayout scopeCard = cardBox(15, 13);
+        scopeCard.addView(cardTitleIcon(R.drawable.ic_perm_vpn, CYAN, "COBERTURA DE RED (DUAL-STACK)"));
+        spScope = new Spinner(this);
+        spScope.setBackground(roundedBg(BG_DARK, BORDER_SUBTLE, 12));
+        spScope.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        ArrayAdapter<String> scopeAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, new String[] {
+                        "Wi-Fi + Datos (Dual-Stack)",
+                        "Solo Wi-Fi (IPv4/UDP + IPv6)",
+                        "Datos 4G/5G (DoH + DoT TLS 853)"
+                }) {
+            @Override public View getView(int pos, View cv, ViewGroup p) {
+                TextView v = (TextView) super.getView(pos, cv, p);
+                v.setTextColor(TEXT_PRIMARY);
+                v.setTextSize(12);
+                v.setPadding(dp(10), dp(9), dp(10), dp(9));
+                return v;
+            }
+            @Override public View getDropDownView(int pos, View cv, ViewGroup p) {
+                TextView v = (TextView) super.getDropDownView(pos, cv, p);
+                v.setBackgroundColor(BG_SURFACE);
+                v.setTextColor(TEXT_PRIMARY);
+                v.setTextSize(12);
+                v.setPadding(dp(14), dp(10), dp(14), dp(10));
+                return v;
+            }
+        };
+        spScope.setAdapter(scopeAdapter);
+        scopeCard.addView(spScope);
+        TextView scopeNote = new TextView(this);
+        scopeNote.setText("Filtrado simultáneo en Wi-Fi y 4G/5G. Escudo IPv6 y DNS cifrado de respaldo.");
+        scopeNote.setTextSize(11);
+        scopeNote.setTextColor(TEXT_MUTED);
+        scopeNote.setPadding(0, dp(7), 0, 0);
+        scopeCard.addView(scopeNote);
+        root.addView(scopeCard);
+
         LinearLayout dnsCard = cardBox(15, 13);
         dnsCard.addView(cardTitleIcon(R.drawable.ic_row_dns, CYAN, "SERVIDOR DNS (WIFI Y DATOS 4G/5G)"));
 
@@ -774,21 +813,23 @@ public class MainActivity extends Activity {
 
         LinearLayout swCard = cardBox(15, 10);
         swCard.addView(cardTitleIcon(R.drawable.ic_nav_filters, CYAN, "CAPAS DE BLOQUEO AVANZADO"));
-        swCard.addView(switchRow(R.drawable.ic_nav_shield, "Inspección SNI + HTTP", "Analiza conexiones de juegos sin descifrar datos privados", 0));
+        swCard.addView(switchRow(R.drawable.ic_nav_shield, "Bloqueo total de anuncios (de todo)", "Juegos, video/YouTube, banners, popups, píxeles y telemetría", 0));
         swCard.addView(divider());
-        swCard.addView(switchRow(R.drawable.ic_nav_filters, "Bloquear red publicitaria de Meta", "Filtra anuncios sin afectar WhatsApp ni Instagram", 1));
+        swCard.addView(switchRow(R.drawable.ic_nav_shield, "Inspección SNI + HTTP", "Analiza conexiones de juegos sin descifrar datos privados", 1));
         swCard.addView(divider());
-        swCard.addView(switchRow(R.drawable.ic_nav_activity, "Cortar QUIC (UDP 443 y 8443)", "Evita que Chrome/WebView/ads esquiven el filtro TCP", 2));
+        swCard.addView(switchRow(R.drawable.ic_nav_filters, "Bloquear red publicitaria de Meta", "Filtra anuncios sin afectar WhatsApp ni Instagram", 2));
         swCard.addView(divider());
-        swCard.addView(switchRow(R.drawable.ic_perm_vpn, "Cortar DoT / DoH evasivo", "Impide que los SDKs usen DNS privado 1.1.1.1 / 8.8.8.8", 3));
+        swCard.addView(switchRow(R.drawable.ic_nav_activity, "Cortar QUIC (UDP 443 y 8443)", "Evita que Chrome/WebView/ads esquiven el filtro TCP", 3));
         swCard.addView(divider());
-        swCard.addView(switchRow(R.drawable.ic_perm_notif, "Notificar anuncios bloqueados", "Muestra aviso en Android al cortar publicidad", 4));
+        swCard.addView(switchRow(R.drawable.ic_perm_vpn, "Cortar DoT / DoH evasivo", "Impide que los SDKs usen DNS privado 1.1.1.1 / 8.8.8.8", 4));
+        swCard.addView(divider());
+        swCard.addView(switchRow(R.drawable.ic_perm_notif, "Notificar anuncios bloqueados", "Muestra aviso en Android al cortar publicidad", 5));
         root.addView(swCard);
 
         LinearLayout listCard = cardBox(15, 13);
         listCard.addView(cardTitleIcon(R.drawable.ic_row_packets, EMERALD, "BASE DE DOMINIOS PUBLICITARIOS"));
         tvUpdateStatus = new TextView(this);
-        tvUpdateStatus.setText("HaGeZi Pro + StevenBlack (+200.000 dominios)");
+        tvUpdateStatus.setText("HaGeZi Pro + StevenBlack (+204.312 dominios)");
         tvUpdateStatus.setTextSize(12);
         tvUpdateStatus.setTextColor(TEXT_PRIMARY);
         tvUpdateStatus.setPadding(0, dp(2), 0, dp(10));
@@ -1251,20 +1292,22 @@ public class MainActivity extends Activity {
         }
         row.addView(s);
 
-        if (which == 0) swSni = s;
-        else if (which == 1) swMeta = s;
-        else if (which == 2) swQuic = s;
-        else if (which == 3) swDot = s;
+        if (which == 0) swBlockAll = s;
+        else if (which == 1) swSni = s;
+        else if (which == 2) swMeta = s;
+        else if (which == 3) swQuic = s;
+        else if (which == 4) swDot = s;
         else swNotify = s;
 
         final int w = which;
         s.setOnCheckedChangeListener((b, v) -> {
             if (loadingPrefs) return;
             SharedPreferences.Editor e = prefs.edit();
-            if (w == 0) e.putBoolean(Blocklist.KEY_SNI_MODE, v);
-            else if (w == 1) e.putBoolean(Blocklist.KEY_META_BLOCK, v);
-            else if (w == 2) e.putBoolean(Blocklist.KEY_BLOCK_QUIC, v);
-            else if (w == 3) e.putBoolean(Blocklist.KEY_BLOCK_DOT, v);
+            if (w == 0) e.putBoolean(Blocklist.KEY_BLOCK_ALL, v);
+            else if (w == 1) e.putBoolean(Blocklist.KEY_SNI_MODE, v);
+            else if (w == 2) e.putBoolean(Blocklist.KEY_META_BLOCK, v);
+            else if (w == 3) e.putBoolean(Blocklist.KEY_BLOCK_QUIC, v);
+            else if (w == 4) e.putBoolean(Blocklist.KEY_BLOCK_DOT, v);
             else {
                 e.putBoolean(Blocklist.KEY_NOTIFY_BLOCKS, v);
                 if (v && !areNotificationsReallyEnabled()) activateNotificationsFromAndroid();
@@ -1335,6 +1378,7 @@ public class MainActivity extends Activity {
 
     private void loadPrefs() {
         loadingPrefs = true;
+        swBlockAll.setChecked(prefs.getBoolean(Blocklist.KEY_BLOCK_ALL, true));
         swSni.setChecked(prefs.getBoolean(Blocklist.KEY_SNI_MODE, true));
         swMeta.setChecked(prefs.getBoolean(Blocklist.KEY_META_BLOCK, true));
         swQuic.setChecked(prefs.getBoolean(Blocklist.KEY_BLOCK_QUIC, true));
@@ -1358,6 +1402,19 @@ public class MainActivity extends Activity {
                     if (AdBlockVpnService.SERVICE_RUNNING.get()) restartVpn();
                     toast("DNS: " + DnsProviders.get(pos).name);
                 }
+            }
+            @Override public void onNothingSelected(AdapterView<?> par) {}
+        });
+
+        int scope = prefs.getInt(Blocklist.KEY_NETWORK_SCOPE, 0);
+        if (scope < 0 || scope > 2) scope = 0;
+        spScope.setSelection(scope);
+        spScope.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> par, View v, int pos, long id) {
+                if (loadingPrefs) return;
+                prefs.edit().putInt(Blocklist.KEY_NETWORK_SCOPE, pos).apply();
+                if (AdBlockVpnService.SERVICE_RUNNING.get()) restartVpn();
+                toast("Cobertura: " + par.getItemAtPosition(pos));
             }
             @Override public void onNothingSelected(AdapterView<?> par) {}
         });
@@ -1865,7 +1922,7 @@ public class MainActivity extends Activity {
                     ? new Notification.Builder(this, chId)
                     : new Notification.Builder(this);
             b.setSmallIcon(R.drawable.ic_stat_shield)
-                    .setContentTitle("Adblock Gamer Pro v6.0")
+                    .setContentTitle("Adblock Gamer Pro v6.1")
                     .setContentText("Notificaciones funcionando correctamente")
                     .setContentIntent(pi)
                     .setAutoCancel(true);
