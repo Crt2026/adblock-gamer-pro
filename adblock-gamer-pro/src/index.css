@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@layer base {
+  html,
+  body {
+    background-color: #090B10;
+    color: #F1F5F9;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  }
+
+  code,
+  pre,
+  .font-mono {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #090B10;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1E2433;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2C354A;
+  }
+}
+
+@keyframes shieldOrbit {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.animate-shield-orbit {
+  animation: shieldOrbit 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shield-orbit {
+    animation: none;
+  }
+}
+
+.gsi-material-button {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-appearance: none;
+  background-color: #ffffff;
+  background-image: none;
+  border: 1px solid #747775;
+  border-radius: 9999px;
+  box-sizing: border-box;
+  color: #1f1f1f;
+  cursor: pointer;
+  font-family: "Plus Jakarta Sans", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  height: 44px;
+  letter-spacing: 0.25px;
+  outline: none;
+  overflow: hidden;
+  padding: 0 18px;
+  position: relative;
+  text-align: center;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  vertical-align: middle;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gsi-material-button:hover:not(:disabled) {
+  background-color: #f4f6f8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.gsi-material-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.gsi-material-button-content-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.gsi-material-button-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+

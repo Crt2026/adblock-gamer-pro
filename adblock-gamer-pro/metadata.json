@@ -1,0 +1,6 @@
+{
+  "name": "Adblock Gamer Pro",
+  "description": "Bloqueador de anuncios DNS y navegador YouTube sin anuncios portado desde Crt2026/bloqueador-anuncios-youtube-android.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
