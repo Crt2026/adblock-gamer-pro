@@ -5,7 +5,7 @@ Bloqueador de anuncios para juegos y apps de Android mediante `VpnService` + fil
 ## Estado actual
 
 - Versión **6.1** (`versionCode 16`), `versionName '6.1'`.
-- APK v6.0 listo para instalar: `AdblockGamerPro-v6.0.apk`. El APK v6.1 se genera en GitHub Actions como artefacto `AdblockGamerPro-v6.0-apk`.
+- APK v6.0 listo para instalar: `AdblockGamerPro-v6.0.apk`. El APK v6.1 se genera en GitHub Actions como artefacto `AdblockGamerPro-v6.1-apk`.
 - Proyecto web/PWA v6.1: carpeta `adblock-gamer-pro/` y paquete `adblock-gamer-pro-v6.1.zip`.
 - Idioma de la interfaz: español.
 - Pestañas: **Protección / Actividad / Filtros / Permisos** (la interfaz que se ve en el video de la app y en la web v6.1).
