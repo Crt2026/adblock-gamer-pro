@@ -4,14 +4,16 @@ Bloqueador de anuncios para juegos y apps de Android mediante `VpnService` + fil
 
 ## Estado actual
 
-- Versión 4.1 (`versionCode 8`).
-- APK listo para instalar: `AdblockGamerPro-v4.1.apk`.
+- Versión 6.0 (`versionCode 15`), `versionName '6.0'`.
+- APK listo para instalar: `AdblockGamerPro-v6.0.apk` (también disponible como artefacto `AdblockGamerPro-v6.0-apk` en GitHub Actions).
 - Idioma de la interfaz: español.
+- Pestañas: **Protección / Actividad / Filtros / Permisos** (la interfaz que se ve en el video de la app).
 
 ## Qué hace
 
-- Botón central con llave: **ACTIVAR / DESACTIVAR**, estado `PROTEGIDO`.
-- Bloqueo DNS con lista de ~76.000 dominios (`app/src/main/assets/ad_domains.txt`, lista base StevenBlack + reglas propias).
+- Botón central **Cyber-Reactor** con anillo orbital HUD: **ACTIVAR / DESACTIVAR**, indicador **SIN LLAVE / CON LLAVE** y estado **Protección desactivada / Protección activa**.
+- Motor anti-desconexión v6.0: `startForeground` inmediato, `connect` TCP asíncrono en pool de 8 hilos, `NetworkCallback` seguro y auto-reconexión con `RestartReceiver`.
+- Bloqueo DNS con lista de ~76.000 dominios (`app/src/main/assets/ad_domains.txt`, lista base StevenBlack + HaGeZi Pro + reglas propias).
 - Inspección SNI para cortar anuncios que usan IP fija sin pasar por DNS.
 - Bloqueo de QUIC (UDP 443), DNS cifrado (DoT 853 / DoH) y evasión del proveedor DNS.
 - Opción **Anuncios de Meta bloqueados**: enruta rangos IP de Meta al túnel y deja fuera las apps de Meta para no romper chats.
@@ -32,7 +34,7 @@ No bloquea el 100 % de los anuncios:
 
 ## Compilar
 
-Requiere JDK 21 y Android SDK (compileSdk 34). El proyecto incluye `gradlew`? No: se compila con Gradle 8.11.1 instalado.
+Requiere JDK 17 o 21 (GitHub Actions usa Temurin 17) y Android SDK (compileSdk 34). El proyecto no incluye `gradlew`: se compila con Gradle 8.11.1 instalado.
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.13.21-hotspot'
@@ -56,3 +58,7 @@ La suite de pruebas del motor está en `%TEMP%\opencode\blocktests` y verifica l
 - `app/src/main/java/com/bloqueador/anuncios/TrafficLog.java` — historial en vivo.
 - `app/src/main/java/com/bloqueador/anuncios/CrashLogger.java` — diagnóstico de errores.
 - `LEEME.txt` — instrucciones de uso en español.
+- `LEEME_V6.txt` — instrucciones del parche v6.0 (motor anti-desconexión, Cyber-Reactor, iconos y permisos para Xiaomi/HyperOS).
+- `adblock-gamer-pro-v6.0-parche.zip` — parche completo v6.0.
+
+Esta es la única aplicación del repositorio: la interfaz nativa Android de las pestañas **Protección / Actividad / Filtros / Permisos**.
