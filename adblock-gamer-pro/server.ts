@@ -662,7 +662,7 @@ async function fetchGithubRepoSnapshot(forceRefresh = false): Promise<GithubRepo
 
   const headers = {
     Accept: 'application/vnd.github+json',
-    'User-Agent': 'Adblock-Gamer-Pro-Web/6.1',
+    'User-Agent': 'Adblock-Gamer-Pro-Web/6.2',
   };
 
   const fallback: GithubRepoSnapshot = {
@@ -670,7 +670,7 @@ async function fetchGithubRepoSnapshot(forceRefresh = false): Promise<GithubRepo
     htmlUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`,
     defaultBranch: 'master',
     description:
-      'Bloqueador de anuncios para juegos y apps de Android mediante VpnService + filtro DNS + inspección SNI (Cyber-Reactor v6.1).',
+      'Bloqueador de anuncios para juegos y apps de Android mediante VpnService + filtro DNS + inspección SNI (Cyber-Reactor v6.2).',
     pushedAt: new Date().toISOString(),
     sizeKb: 8729,
     language: 'Java',
@@ -738,7 +738,7 @@ async function fetchGithubRepoSnapshot(forceRefresh = false): Promise<GithubRepo
       ),
       fetch(
         `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${encodeURIComponent(branch)}/LEEME_V6.txt`,
-        { headers: { 'User-Agent': 'Adblock-Gamer-Pro-Web/6.1' } },
+        { headers: { 'User-Agent': 'Adblock-Gamer-Pro-Web/6.2' } },
       ),
     ]);
 
@@ -1047,14 +1047,18 @@ async function startServer() {
   });
 
   app.get(
-    ['/api/download/adblock-gamer-pro-v6.1.zip', '/api/download/adblock-gamer-pro.zip'],
+    [
+      '/api/download/adblock-gamer-pro-v6.2.zip',
+      '/api/download/adblock-gamer-pro-v6.1.zip',
+      '/api/download/adblock-gamer-pro.zip',
+    ],
     (_req, res) => {
       try {
         const zipBuf = buildProjectZipBuffer(__dirname);
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader(
           'Content-Disposition',
-          'attachment; filename="adblock-gamer-pro-v6.1.zip"',
+          'attachment; filename="adblock-gamer-pro-v6.2.zip"',
         );
         res.setHeader('Content-Length', String(zipBuf.length));
         res.send(zipBuf);

@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-/** Servicio VPN v6.1: anti-desconexión, Dual-Stack WiFi + Datos Móviles, bloqueo total, DNS/SNI, sello IPv6 y DoT/DoH. */
+/** Servicio VPN v6.2: anti-desconexión, Dual-Stack WiFi + Datos Móviles, bloqueo total, DNS/SNI, sello IPv6 y DoT/DoH. */
 public class AdBlockVpnService extends VpnService {
 
     public static final String ACTION_START = "com.bloqueador.anuncios.START";
@@ -271,7 +271,7 @@ public class AdBlockVpnService extends VpnService {
                         + " bloqueados | " + PACKETS_READ.get() + " paquetes"
                 : "Conectando túnel de protección...";
         b.setSmallIcon(R.drawable.ic_stat_shield)
-                .setContentTitle("Adblock Gamer Pro v6.1")
+                .setContentTitle("Adblock Gamer Pro v6.2")
                 .setContentText(txt)
                 .setContentIntent(pi)
                 .setOngoing(true)

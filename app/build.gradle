@@ -10,14 +10,28 @@ android {
         applicationId 'com.bloqueador.anuncios'
         minSdk 24
         targetSdk 34
-        versionCode 16
-        versionName '6.1'
+        versionCode 17
+        versionName '6.2'
+    }
+
+    // Keystore fijo para que las actualizaciones se instalen encima de versiones anteriores
+    // con el mismo nombre de paquete (com.bloqueador.anuncios).
+    signingConfigs {
+        release {
+            storeFile file('keystore/adblock-gamer-pro.jks')
+            storePassword project.findProperty('KEYSTORE_PASSWORD') ?: 'AdblockGamerPro2026'
+            keyAlias 'adblockgamerpro'
+            keyPassword project.findProperty('KEY_PASSWORD') ?: 'AdblockGamerPro2026'
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.release
+        }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 

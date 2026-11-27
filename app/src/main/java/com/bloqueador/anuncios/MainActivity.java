@@ -323,7 +323,7 @@ public class MainActivity extends Activity {
         titleRow.addView(brand);
 
         TextView ver = new TextView(this);
-        ver.setText("v6.1");
+        ver.setText("v6.2");
         ver.setTextSize(10);
         ver.setTypeface(null, Typeface.BOLD);
         ver.setTextColor(CYAN);
@@ -1922,7 +1922,7 @@ public class MainActivity extends Activity {
                     ? new Notification.Builder(this, chId)
                     : new Notification.Builder(this);
             b.setSmallIcon(R.drawable.ic_stat_shield)
-                    .setContentTitle("Adblock Gamer Pro v6.1")
+                    .setContentTitle("Adblock Gamer Pro v6.2")
                     .setContentText("Notificaciones funcionando correctamente")
                     .setContentIntent(pi)
                     .setAutoCancel(true);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download } from 'lucide-react';
+import { ArchiveZipIcon } from './Icons';
 
 interface DownloadZipButtonProps {
   variant?: 'compact' | 'full';
@@ -13,7 +13,7 @@ export function DownloadZipButton({ variant = 'compact' }: DownloadZipButtonProp
     setDownloading(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/download/adblock-gamer-pro-v6.1.zip');
+      const res = await fetch('/api/download/adblock-gamer-pro-v6.2.zip');
       if (!res.ok) {
         throw new Error(`Error HTTP ${res.status}`);
       }
@@ -21,7 +21,7 @@ export function DownloadZipButton({ variant = 'compact' }: DownloadZipButtonProp
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'adblock-gamer-pro-v6.1.zip';
+      link.download = 'adblock-gamer-pro-v6.2.zip';
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -41,20 +41,20 @@ export function DownloadZipButton({ variant = 'compact' }: DownloadZipButtonProp
         disabled={downloading}
         className={
           variant === 'full'
-            ? 'w-full min-h-[46px] px-4 rounded-xl bg-[#00E68A] hover:bg-[#1ef29d] disabled:opacity-60 text-slate-950 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors'
-            : 'min-h-[44px] px-4 py-2 rounded-xl bg-[#00E68A] hover:bg-[#1ef29d] disabled:opacity-60 text-slate-950 text-xs font-extrabold flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer transition-colors'
+            ? 'w-full min-h-[46px] px-4 rounded-xl bg-[#00E68A] hover:bg-[#1ef29d] disabled:opacity-60 text-slate-950 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#00E5FF]'
+            : 'min-h-[44px] px-4 py-2 rounded-xl bg-[#00E68A] hover:bg-[#1ef29d] disabled:opacity-60 text-slate-950 text-xs font-extrabold flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#00E5FF]'
         }
       >
-        <Download className="w-4 h-4 shrink-0" />
+        <ArchiveZipIcon className="w-4 h-4 shrink-0" />
         <span>
           {downloading
-            ? 'Empaquetando WinRAR/ZIP...'
+            ? 'Empaquetando WinRAR...'
             : variant === 'full'
-              ? 'Descargar WinRAR / ZIP (v6.1)'
-              : 'WinRAR / ZIP (v6.1)'}
+              ? 'Descargar WinRAR / ZIP (v6.2)'
+              : 'WinRAR / ZIP (v6.2)'}
         </span>
       </button>
-      {errorMsg && <p className="text-[11px] text-[#F87171]">{errorMsg}</p>}
+      {errorMsg && <p className="text-[11px] text-[#FF4D6D]">{errorMsg}</p>}
     </div>
   );
 }

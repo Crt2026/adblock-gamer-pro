@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Download, Smartphone, WifiOff, X } from 'lucide-react';
+import { WifiOff, X } from 'lucide-react';
 import { useOnlineStatus, usePWAInstall } from '../hooks/usePWAInstall';
+import { DownloadApkIcon, MobileSignalIcon } from './Icons';
 
 interface PWAInstallButtonProps {
   variant?: 'compact' | 'full';
@@ -29,11 +30,11 @@ export function PWAInstallButton({ variant = 'compact' }: PWAInstallButtonProps)
         onClick={() => void handleClick()}
         className={
           variant === 'full'
-            ? 'w-full min-h-[46px] px-4 py-2.5 rounded-xl bg-[#00E5FF] hover:bg-[#38ebff] text-slate-950 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors'
+            ? 'w-full min-h-[46px] px-4 py-2.5 rounded-xl bg-[#00E5FF] hover:bg-[#38ebff] text-slate-950 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors whitespace-nowrap focus-visible:outline-2 focus-visible:outline-white'
             : 'min-h-[44px] px-4 py-2 rounded-xl bg-[#111A2D] hover:bg-[#17243D] border border-[#00E5FF]/40 text-[#00E5FF] text-xs font-bold flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer transition-colors'
         }
       >
-        <Download className="w-4 h-4 shrink-0" />
+        <DownloadApkIcon className="w-4 h-4 shrink-0" />
         <span>Instalar Web App</span>
       </button>
 
@@ -49,15 +50,13 @@ export function PWAInstallButton({ variant = 'compact' }: PWAInstallButtonProps)
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/15 border border-[#00E5FF]/35 flex items-center justify-center text-[#00E5FF]">
-                  <Smartphone className="w-5 h-5" />
+                  <MobileSignalIcon className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-white">
                     {isIOS ? 'Instalar en iPhone / iPad' : 'Instalar App en Android'}
                   </h3>
-                  <p className="text-xs text-slate-400">
-                    Modo pantalla completa (PWA)
-                  </p>
+                  <p className="text-xs text-[#7C90B8]">Modo pantalla completa (PWA)</p>
                 </div>
               </div>
               <button
@@ -71,7 +70,7 @@ export function PWAInstallButton({ variant = 'compact' }: PWAInstallButtonProps)
             </div>
 
             {isIOS ? (
-              <ol className="space-y-2.5 text-xs sm:text-sm text-slate-300 bg-[#090B10] border border-[#213254] rounded-2xl p-4 list-decimal list-inside">
+              <ol className="space-y-2.5 text-xs sm:text-sm text-slate-300 bg-[#080D17] border border-[#213254] rounded-2xl p-4 list-decimal list-inside">
                 <li>
                   Toca el botón <strong>Compartir</strong> en la barra de Safari.
                 </li>
@@ -83,7 +82,7 @@ export function PWAInstallButton({ variant = 'compact' }: PWAInstallButtonProps)
                 </li>
               </ol>
             ) : (
-              <ol className="space-y-2.5 text-xs sm:text-sm text-slate-300 bg-[#090B10] border border-[#213254] rounded-2xl p-4 list-decimal list-inside">
+              <ol className="space-y-2.5 text-xs sm:text-sm text-slate-300 bg-[#080D17] border border-[#213254] rounded-2xl p-4 list-decimal list-inside">
                 <li>
                   Abre esta app directamente en <strong>Google Chrome</strong> desde tu teléfono Android.
                 </li>
@@ -115,7 +114,7 @@ export function OfflineIndicator() {
   if (isOnline) return null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 left-4 z-50 flex items-center gap-2 rounded-xl bg-[#F59E0B] px-3.5 py-2 text-xs font-bold text-slate-950 shadow-lg">
+    <div className="fixed bottom-20 md:bottom-4 left-4 z-50 flex items-center gap-2 rounded-xl bg-[#FFC247] px-3.5 py-2 text-xs font-bold text-slate-950 shadow-lg">
       <WifiOff className="w-4 h-4 shrink-0" />
       <span>Modo sin conexión — Usando caché local</span>
     </div>

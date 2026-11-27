@@ -4,16 +4,16 @@ Bloqueador de anuncios para juegos y apps de Android mediante `VpnService` + fil
 
 ## Estado actual
 
-- Versión **6.1** (`versionCode 16`), `versionName '6.1'`.
-- APK v6.0 listo para instalar: `AdblockGamerPro-v6.0.apk`. El APK v6.1 se genera en GitHub Actions como artefacto `AdblockGamerPro-v6.1-apk`.
-- Proyecto web/PWA v6.1: carpeta `adblock-gamer-pro/` y paquete `adblock-gamer-pro-v6.1.zip`.
+- Versión **6.2** (`versionCode 17`), `versionName '6.2'`.
+- APK v6.0/v6.1 listos para instalar: `AdblockGamerPro-v6.0.apk`, `AdblockGamerPro-v6.1.apk`. El APK v6.2 se genera en GitHub Actions como artefacto `AdblockGamerPro-v6.2-apk`.
+- Proyecto web/PWA v6.2: carpeta `adblock-gamer-pro/` y paquete `adblock-gamer-pro-v6.2.zip`.
 - Idioma de la interfaz: español.
-- Pestañas: **Protección / Actividad / Filtros / Permisos** (la interfaz que se ve en el video de la app y en la web v6.1).
+- Pestañas: **Protección / Actividad / Filtros / Permisos** (la interfaz que se ve en el video de la app y en la web v6.2).
 
 ## Qué hace
 
-- Botón central **Cyber-Reactor** con anillo orbital HUD: **ACTIVAR / DESACTIVAR**, indicador **SIN LLAVE / CON LLAVE** y estado **Protección desactivada / Protección activa**.
-- Motor anti-desconexión v6.1: `startForeground` inmediato, `connect` TCP asíncrono en pool de 8 hilos, `NetworkCallback` seguro en **TRANSPORT_WIFI + TRANSPORT_CELLULAR** y auto-reconexión con `RestartReceiver`.
+- Botón central **Cyber-Reactor v6.2** con **doble anillo HUD contrarrotatorio**, iconos bitono con degradado y estado **TUN0 PROTEGIDO / TOCA PARA INICIAR**.
+- Motor anti-desconexión v6.2: `startForeground` inmediato, `connect` TCP asíncrono en pool de 8 hilos, `NetworkCallback` seguro en **TRANSPORT_WIFI + TRANSPORT_CELLULAR** y auto-reconexión con `RestartReceiver`.
 - **Dual-Stack** activo por defecto: Wi-Fi + Datos 4G/5G, dirección IPv6 en el túnel y DNS IPv4/IPv6 (`10.233.233.1` / `fd00:233::1`).
 - **Bloqueo total de anuncios (de todo)** activo por defecto: juegos, video/YouTube, banners, popups, píxeles, telemetría y SDKs (doubleclick, pubmatic, adcolony, chartboost, inmobi, criteo, taboola, outbrain, adjust, appsflyer, pixel.facebook.com, analytics.tiktok.com).
 - Bloqueo DNS con lista ampliada HaGeZi Pro + StevenBlack (**+204.312 dominios**), reglas personalizadas y excepciones.
@@ -50,6 +50,8 @@ gradle assembleDebug --no-daemon
 
 El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`.
 
+Las variantes `debug` y `release` se firman con el **keystore fijo** `app/keystore/adblock-gamer-pro.jks` (alias `adblockgamerpro`), así las actualizaciones se instalan encima de versiones anteriores sin conflicto de paquete. Las contraseñas se pueden sobrescribir con las propiedades Gradle `KEYSTORE_PASSWORD` y `KEY_PASSWORD`.
+
 ## Pruebas
 
 La suite de pruebas del motor está en `%TEMP%\opencode\blocktests` y verifica lista de bloqueo, respuestas DNS, SNI, checksums, evasión DoH, proveedores e historial. Último resultado: **26/26 pruebas superadas**.
@@ -65,7 +67,9 @@ La suite de pruebas del motor está en `%TEMP%\opencode\blocktests` y verifica l
 - `LEEME.txt` — instrucciones de uso en español.
 - `LEEME_V6.txt` — instrucciones del parche v6.0 (motor anti-desconexión, Cyber-Reactor, iconos y permisos para Xiaomi/HyperOS).
 - `adblock-gamer-pro-v6.0-parche.zip` — parche completo v6.0.
-- `adblock-gamer-pro-v6.1.zip` — proyecto web/PWA v6.1 completo (descargable también desde la propia app web).
-- `adblock-gamer-pro/OPENCODE_CAMBIOS_V6_1.md` — resumen de los cambios reales de v6.1.
+- `adblock-gamer-pro-v6.1.zip` — proyecto web/PWA v6.1 completo (versión anterior).
+- `adblock-gamer-pro-v6.2.zip` — proyecto web/PWA v6.2 completo (descargable también desde la propia app web).
+- `app/keystore/adblock-gamer-pro.jks` — keystore fijo de firma para debug y release.
+- `adblock-gamer-pro/OPENCODE_CAMBIOS_V6_1.md` y `OPENCODE_CAMBIOS_V6_2.md` — resúmenes de los cambios reales.
 
-El repositorio incluye la app nativa Android (`app/`) y la versión web/PWA (`adblock-gamer-pro/`), ambas en v6.1 con las pestañas **Protección / Actividad / Filtros / Permisos**.
+El repositorio incluye la app nativa Android (`app/`) y la versión web/PWA (`adblock-gamer-pro/`), ambas en v6.2 con las pestañas **Protección / Actividad / Filtros / Permisos**.

@@ -1,7 +1,14 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { Ban, CheckCircle2, Play, Search, ShieldCheck } from 'lucide-react';
 import { parseDomainLines } from '../data/adblockRules';
 import type { AdblockV6State } from '../hooks/useAdblockPrefs';
+import {
+  AdAllowEntryIcon,
+  AdBlockEntryIcon,
+  BlockedShieldIcon,
+  NavActivityIcon,
+  ProbePlayIcon,
+  SearchGlassIcon,
+} from './Icons';
 
 interface ActivityTabProps {
   state: AdblockV6State;
@@ -9,7 +16,15 @@ interface ActivityTabProps {
   onInspectDomain: (rawDomain: string) => { domain: string; blocked: boolean; reason: string } | null;
 }
 
-type ActivityFilter = 0 | 1 | 2; // 0 = Todos, 1 = Bloqueados, 2 = Permitidos
+type ActivityFilter = 0 | 1 | 2;
+
+const QUICK_TEST_DOMAINS = [
+  'doubleclick.net',
+  'unityads.unity3d.com',
+  'ads.youtube.com',
+  'pixel.facebook.com',
+  'm.youtube.com',
+];
 
 export function ActivityTab({
   state,
@@ -50,28 +65,33 @@ export function ActivityTab({
     [state.customAllowText],
   );
 
-  const handleProbeSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const res = onInspectDomain(probeInput);
+  const runProbe = (rawDomain: string) => {
+    const res = onInspectDomain(rawDomain);
     if (!res) {
       setLastProbeMsg('Ingresa un dominio válido (ej: googleads.g.doubleclick.net)');
       return;
     }
     setLastProbeMsg(
-      `${res.domain}: ${res.blocked ? 'BLOQUEADO' : 'PERMITIDO'} · ${res.reason}`,
+      `${res.domain}: ${res.blocked ? 'Bloqueado' : 'Permitido'} · ${res.reason}`,
     );
+  };
+
+  const handleProbeSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    runProbe(probeInput);
     setProbeInput('');
   };
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[20px] bg-[#111A2D] border border-[#213254] p-4 space-y-3.5">
+      <section className="rounded-[20px] bg-[#111A2D] border border-[#213254] p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#7C90B8]">
-            TRÁFICO EN TIEMPO REAL
+          <h2 className="text-sm font-extrabold text-[#F1F5FF] flex items-center gap-2">
+            <NavActivityIcon active className="w-5 h-5 text-[#00E5FF]" />
+            <span>Tráfico en tiempo real</span>
           </h2>
-          <span className="text-[11px] font-bold text-[#00E5FF] tabular-nums">
-            {counts.total} eventos
+          <span className="text-xs font-bold text-[#7C90B8] tabular-nums">
+            {counts.total} eventos registrados
           </span>
         </div>
 
@@ -80,7 +100,7 @@ export function ActivityTab({
           <button
             type="button"
             onClick={() => setFilterMode(0)}
-            className={`min-h-[38px] px-2 rounded-xl text-xs font-extrabold cursor-pointer transition-colors tabular-nums ${
+            className={`min-h-[40px] px-2 rounded-xl text-xs font-extrabold cursor-pointer transition-colors tabular-nums whitespace-nowrap ${
               filterMode === 0
                 ? 'bg-[#00E5FF] text-slate-950'
                 : 'bg-[#0C1322] border border-[#213254] text-[#7C90B8] hover:text-[#F1F5FF]'
@@ -91,7 +111,7 @@ export function ActivityTab({
           <button
             type="button"
             onClick={() => setFilterMode(1)}
-            className={`min-h-[38px] px-2 rounded-xl text-xs font-extrabold cursor-pointer transition-colors tabular-nums ${
+            className={`min-h-[40px] px-2 rounded-xl text-xs font-extrabold cursor-pointer transition-colors tabular-nums whitespace-nowrap ${
               filterMode === 1
                 ? 'bg-[#FF4D6D] text-white'
                 : 'bg-[#0C1322] border border-[#213254] text-[#7C90B8] hover:text-[#F1F5FF]'
@@ -102,7 +122,7 @@ export function ActivityTab({
           <button
             type="button"
             onClick={() => setFilterMode(2)}
-            className={`min-h-[38px] px-2 rounded-xl text-xs font-extrabold cursor-pointer transition-colors tabular-nums ${
+            className={`min-h-[40px] px-2 rounded-xl text-xs font-extrabold cursor-pointer transition-colors tabular-nums whitespace-nowrap ${
               filterMode === 2
                 ? 'bg-[#00E68A] text-slate-950'
                 : 'bg-[#0C1322] border border-[#213254] text-[#7C90B8] hover:text-[#F1F5FF]'
@@ -112,38 +132,55 @@ export function ActivityTab({
           </button>
         </div>
 
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-[#7C90B8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filtrar dominio en el historial..."
-            className="w-full min-h-[42px] pl-10 pr-3.5 rounded-xl bg-[#0C1322] border border-[#213254] focus:border-[#00E5FF] outline-none text-xs sm:text-sm text-[#F1F5FF] placeholder:text-[#7C90B8]"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Search Input */}
+          <div className="relative">
+            <SearchGlassIcon className="w-4 h-4 text-[#7C90B8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filtrar dominio en el historial..."
+              className="w-full min-h-[44px] pl-10 pr-3.5 rounded-xl bg-[#0C1322] border border-[#213254] focus:border-[#00E5FF] outline-none text-xs sm:text-sm text-[#F1F5FF] placeholder:text-[#7C90B8]"
+            />
+          </div>
+
+          {/* Live Domain Probe */}
+          <form onSubmit={handleProbeSubmit} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={probeInput}
+              onChange={(e) => setProbeInput(e.target.value)}
+              placeholder="Probar dominio (ej: unityads.unity3d.com)"
+              className="flex-1 min-w-0 min-h-[44px] px-3.5 rounded-xl bg-[#0C1322] border border-[#213254] focus:border-[#00E68A] outline-none text-xs sm:text-sm text-[#F1F5FF] placeholder:text-[#7C90B8]"
+            />
+            <button
+              type="submit"
+              className="min-h-[44px] px-4 rounded-xl bg-[#18243E] hover:bg-[#213254] border border-[#213254] text-[#00E68A] text-xs font-extrabold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors whitespace-nowrap"
+            >
+              <ProbePlayIcon className="w-4 h-4 shrink-0" />
+              <span>Probar</span>
+            </button>
+          </form>
         </div>
 
-        {/* Live Domain Probe */}
-        <form onSubmit={handleProbeSubmit} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={probeInput}
-            onChange={(e) => setProbeInput(e.target.value)}
-            placeholder="Probar consulta (ej: unityads.unity3d.com)"
-            className="flex-1 min-w-0 min-h-[42px] px-3.5 rounded-xl bg-[#0C1322] border border-[#213254] focus:border-[#00E68A] outline-none text-xs text-[#F1F5FF] placeholder:text-[#7C90B8]"
-          />
-          <button
-            type="submit"
-            className="min-h-[42px] px-3.5 rounded-xl bg-[#18243E] hover:bg-[#213254] border border-[#213254] text-[#00E68A] text-xs font-extrabold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors"
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span>Probar</span>
-          </button>
-        </form>
+        {/* Quick 1-tap test buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-[#7C90B8]">Prueba rápida:</span>
+          {QUICK_TEST_DOMAINS.map((domain) => (
+            <button
+              key={domain}
+              type="button"
+              onClick={() => runProbe(domain)}
+              className="min-h-[32px] px-2.5 rounded-lg bg-[#0C1322] hover:bg-[#18243E] border border-[#213254] text-[11px] font-mono text-[#00E5FF] cursor-pointer transition-colors"
+            >
+              {domain}
+            </button>
+          ))}
+        </div>
 
         {lastProbeMsg && (
-          <p className="text-[11px] font-medium text-[#00E5FF] bg-[#0C1322] border border-[#213254] rounded-xl px-3 py-2">
+          <p className="text-xs font-medium text-[#00E5FF] bg-[#0C1322] border border-[#213254] rounded-xl px-3.5 py-2.5">
             {lastProbeMsg}
           </p>
         )}
@@ -152,8 +189,20 @@ export function ActivityTab({
       {/* Traffic List */}
       <section className="rounded-[20px] bg-[#111A2D] border border-[#213254] overflow-hidden">
         {filteredEntries.length === 0 ? (
-          <div className="p-6 text-center text-xs text-[#7C90B8]">
-            No hay dominios que coincidan con el filtro actual.
+          <div className="p-8 text-center text-xs text-[#7C90B8] space-y-2">
+            <p>No hay dominios que coincidan con el filtro actual.</p>
+            {(searchQuery || filterMode !== 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterMode(0);
+                  setSearchQuery('');
+                }}
+                className="min-h-[36px] px-3.5 rounded-xl bg-[#18243E] text-[#00E5FF] text-xs font-bold cursor-pointer"
+              >
+                Mostrar todos los eventos
+              </button>
+            )}
           </div>
         ) : (
           <ul className="divide-y divide-[#213254]/70">
@@ -164,16 +213,16 @@ export function ActivityTab({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                       item.blocked
                         ? 'bg-[#2C101C] text-[#FF4D6D]'
                         : 'bg-[#082B24] text-[#00E68A]'
                     }`}
                   >
                     {item.blocked ? (
-                      <Ban className="w-4 h-4" />
+                      <AdBlockEntryIcon className="w-4 h-4" />
                     ) : (
-                      <CheckCircle2 className="w-4 h-4" />
+                      <AdAllowEntryIcon className="w-4 h-4" />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -192,7 +241,7 @@ export function ActivityTab({
                 <button
                   type="button"
                   onClick={() => onToggleDomainRule(item.domain, !item.blocked)}
-                  className={`min-h-[34px] px-3 rounded-xl text-[11px] font-extrabold shrink-0 cursor-pointer transition-colors ${
+                  className={`min-h-[38px] px-3.5 rounded-xl text-xs font-extrabold shrink-0 cursor-pointer transition-colors whitespace-nowrap ${
                     item.blocked
                       ? 'bg-[#082B24] border border-[#00E68A]/45 text-[#00E68A] hover:bg-[#0D3B32]'
                       : 'bg-[#2C101C] border border-[#FF4D6D]/45 text-[#FF4D6D] hover:bg-[#3A1424]'
@@ -205,10 +254,12 @@ export function ActivityTab({
           </ul>
         )}
 
-        <div className="px-4 py-3 bg-[#0C1322] border-t border-[#213254] flex items-center justify-between text-[11px] font-bold text-[#7C90B8] tabular-nums">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#00E5FF]" />
-            Bloqueados a mano: {manualBlockedCount} | Permitidos: {manualAllowedCount}
+        <div className="px-4 py-3 bg-[#0C1322] border-t border-[#213254] flex items-center justify-between text-xs font-bold text-[#7C90B8] tabular-nums">
+          <span className="flex items-center gap-2">
+            <BlockedShieldIcon className="w-4 h-4 shrink-0" />
+            <span>
+              Bloqueados a mano: {manualBlockedCount} · Permitidos: {manualAllowedCount}
+            </span>
           </span>
         </div>
       </section>

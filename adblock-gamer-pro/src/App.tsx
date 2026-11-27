@@ -109,14 +109,23 @@ export default function App() {
           />
         </div>
 
-        <main className="flex-1 w-full max-w-3xl mx-auto px-3.5 sm:px-6 pt-4 pb-24 md:pb-10">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-5 pb-24 md:pb-10">
           {selectedTab === 'PROTECTION' && (
             <ProtectionTab
               state={state}
               onTogglePower={handleTogglePower}
               onChangeNetworkScope={handleChangeNetworkScope}
+              onToggleBlockAll={(enabled) => {
+                setSwitch('blockAllMode', enabled);
+                showToast(
+                  enabled
+                    ? 'Bloqueo total de anuncios activado'
+                    : 'Modo filtro DNS estándar activado',
+                );
+              }}
               onUpdateLists={handleUpdateLists}
               onGoToActivity={() => setSelectedTab('ACTIVITY')}
+              onGoToFilters={() => setSelectedTab('FILTERS')}
               onGoToPermissions={() => setSelectedTab('PERMS')}
             />
           )}

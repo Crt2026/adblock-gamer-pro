@@ -126,7 +126,7 @@ public final class Blocklist {
         "x-adguard.freedns.controld.com", "x-stevenblack.freedns.controld.com"
     };
 
-    /** v6.1 - "Bloqueo total de anuncios (de todo)": juegos, video/YouTube, popups,
+    /** v6.2 - "Bloqueo total de anuncios (de todo)": juegos, video/YouTube, popups,
      *  banners, píxeles, telemetría y SDKs de publicidad que se añaden a la lista base. */
     private static final String[] TOTAL_BLOCK_DOMAINS = {
         "ads.youtube.com", "ad.youtube.com", "ad.doubleclick.net", "static.doubleclick.net",
@@ -209,7 +209,7 @@ public final class Blocklist {
             return matchesAdPattern(h) || (blockAll && matchesTotalPattern(h));
         }
 
-        /** v6.1: patrones adicionales del modo "Bloqueo total de anuncios (de todo)". */
+        /** v6.2: patrones adicionales del modo "Bloqueo total de anuncios (de todo)". */
         private static boolean matchesTotalPattern(String h) {
             for (String kw : TOTAL_BLOCK_KEYWORDS) {
                 if (h.equals(kw) || h.startsWith(kw + ".") || h.contains("." + kw + ".")) {
@@ -322,7 +322,7 @@ public final class Blocklist {
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(45000);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "AdblockGamerPro/6.1");
+            conn.setRequestProperty("User-Agent", "AdblockGamerPro/6.2");
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return;
             try (InputStream in = conn.getInputStream();
                  BufferedReader br = new BufferedReader(
